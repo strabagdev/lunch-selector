@@ -7,7 +7,6 @@ export const dynamic = "force-dynamic";
 type HomePageProps = {
   searchParams: Promise<{
     menuDay?: string | string[] | undefined;
-    month?: string | string[] | undefined;
   }>;
 };
 
@@ -33,11 +32,6 @@ function getMenuDayParam(value: string | string[] | undefined) {
   return Array.isArray(value) ? value[0] : value;
 }
 
-function getMonthParam(value: string | string[] | undefined) {
-  const month = Array.isArray(value) ? value[0] : value;
-  return month && /^\d{4}-\d{2}$/.test(month) ? month : undefined;
-}
-
 function getDateKey(date: Date) {
   return date.toISOString().slice(0, 10);
 }
@@ -50,12 +44,6 @@ function getMonthStart(monthKey: string) {
   return new Date(`${monthKey}-01T00:00:00.000Z`);
 }
 
-function addMonths(monthKey: string, amount: number) {
-  const date = getMonthStart(monthKey);
-  date.setUTCMonth(date.getUTCMonth() + amount);
-  return getMonthKey(date);
-}
-
 function formatMonthHeading(monthKey: string) {
   return new Intl.DateTimeFormat("es-CL", {
     month: "long",
@@ -66,7 +54,6 @@ function formatMonthHeading(monthKey: string) {
 export default async function Home({ searchParams }: HomePageProps) {
   const resolvedSearchParams = await searchParams;
   const requestedMenuDayId = getMenuDayParam(resolvedSearchParams.menuDay);
-  const requestedMonth = getMonthParam(resolvedSearchParams.month);
   const todayKey = getTodayKey();
   const currentMonthKey = todayKey.slice(0, 7);
   const todayDate = new Date(`${todayKey}T00:00:00.000Z`);
@@ -108,15 +95,8 @@ export default async function Home({ searchParams }: HomePageProps) {
 
   const requestedMenuDaySummary =
     selectableMenuDays.find((menuDay) => menuDay.id === requestedMenuDayId) ?? null;
-
-  const selectedMonthKey =
-    requestedMonth && requestedMonth >= currentMonthKey
-      ? requestedMonth
-      : requestedMenuDaySummary
-        ? getMonthKey(requestedMenuDaySummary.date)
-        : currentMonthKey;
-
-  const selectedMonthStart = getMonthStart(selectedMonthKey);
+  const selectedMonthKey = currentMonthKey;
+  const selectedMonthStart = getMonthStart(currentMonthKey);
   const daysInSelectedMonth = new Date(
     Date.UTC(
       selectedMonthStart.getUTCFullYear(),
@@ -124,10 +104,6 @@ export default async function Home({ searchParams }: HomePageProps) {
       0,
     ),
   ).getUTCDate();
-  const monthOffset = (selectedMonthStart.getUTCDay() + 6) % 7;
-  const nextMonthKey = addMonths(selectedMonthKey, 1);
-  const previousMonthKey =
-    selectedMonthKey > currentMonthKey ? addMonths(selectedMonthKey, -1) : null;
   const calendarWeekdays = ["Lun", "Mar", "Mie", "Jue", "Vie", "Sab", "Dom"];
   const menuDayByDateKey = new Map(
     availableMenuDays.map((availableMenuDay) => [
@@ -140,15 +116,13 @@ export default async function Home({ searchParams }: HomePageProps) {
   );
   const selectedMenuDaySummary =
     requestedMenuDaySummary &&
-    getMonthKey(requestedMenuDaySummary.date) === selectedMonthKey
+    getMonthKey(requestedMenuDaySummary.date) === currentMonthKey
       ? requestedMenuDaySummary
-      : selectedMonthKey === currentMonthKey
-        ? visibleSelectableMenuDays.find(
-            (availableMenuDay) => getDateKey(availableMenuDay.date) === todayKey,
-          ) ??
-          visibleSelectableMenuDays[0] ??
-          null
-        : visibleSelectableMenuDays[0] ?? null;
+      : visibleSelectableMenuDays.find(
+          (availableMenuDay) => getDateKey(availableMenuDay.date) === todayKey,
+        ) ??
+        visibleSelectableMenuDays[0] ??
+        null;
   const calendarDays = Array.from({ length: daysInSelectedMonth }, (_, index) => {
     const date = new Date(
       Date.UTC(
@@ -263,7 +237,7 @@ export default async function Home({ searchParams }: HomePageProps) {
   return (
     <main className="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-8 px-6 py-10 sm:px-10">
       <section className="rounded-[26px] border border-border bg-surface p-6 shadow-[0_24px_80px_rgba(29,29,27,0.08)] sm:p-8">
-        <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_320px] lg:items-start lg:gap-6">
+        <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_340px] lg:items-center lg:gap-8">
           <div className="max-w-xl space-y-2.5 xl:pt-1">
             <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-accent">
               Seleccion diaria
@@ -279,35 +253,15 @@ export default async function Home({ searchParams }: HomePageProps) {
             </div>
           </div>
 
-          <section className="self-start rounded-[20px] border border-border bg-background px-4 py-4">
+          <section className="flex min-h-[92px] items-center justify-center rounded-[22px] border border-border bg-[linear-gradient(180deg,rgba(255,255,255,0.92),rgba(251,248,242,0.9))] px-5 py-5 text-center shadow-[inset_0_1px_0_rgba(255,255,255,0.65)]">
             {menuDay ? (
-              <div className="space-y-2.5">
-                <div className="space-y-1">
-                  <p className="text-[9px] font-semibold uppercase tracking-[0.18em] text-accent">
-                    Fecha seleccionada
-                  </p>
-                  <p className="text-lg font-semibold leading-tight tracking-tight sm:text-xl">
-                    {formatMenuDate(menuDay.date)}
-                  </p>
-                  {menuDay.label ? (
-                    <p className="text-[12px] leading-4 text-muted">{menuDay.label}</p>
-                  ) : null}
-                  <p className="text-[12px] leading-4 text-muted">
-                    {menuDay.selections.length} selecciones registradas de{" "}
-                    {people.length} personas activas.
-                  </p>
-                </div>
-              </div>
+              <p className="whitespace-nowrap text-lg font-semibold leading-tight tracking-tight sm:text-[1.35rem]">
+                {formatMenuDate(menuDay.date)}
+              </p>
             ) : (
-              <div className="space-y-2">
-                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-accent">
-                  Fecha seleccionada
-                </p>
-                <p className="text-sm leading-6 text-muted">
-                  Todavia no hay fechas de menu disponibles. Puedes cargarlas
-                  desde administracion.
-                </p>
-              </div>
+              <p className="text-sm leading-6 text-muted">
+                Todavia no hay fechas de menu disponibles.
+              </p>
             )}
           </section>
         </div>
@@ -316,36 +270,9 @@ export default async function Home({ searchParams }: HomePageProps) {
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1.2fr)_minmax(0,0.8fr)]">
         <div className="space-y-6">
           <section className="rounded-[20px] border border-border bg-surface p-5 sm:p-6">
-            <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-              <div className="space-y-2">
-                <h2 className="text-2xl font-semibold tracking-tight">
-                  Elegir fecha
-                </h2>
-                <p className="max-w-2xl text-sm leading-6 text-muted">
-                  Puedes seleccionar hoy o cualquier fecha futura con menu
-                  cargado.
-                </p>
-              </div>
-              <div className="flex items-center gap-2 self-start">
-                {previousMonthKey ? (
-                  <Link
-                    href={`/?month=${previousMonthKey}`}
-                    aria-label="Mes anterior"
-                    className="flex h-8 w-8 items-center justify-center rounded-[9px] border border-border bg-background text-sm font-semibold text-muted transition hover:bg-surface"
-                  >
-                    {"<"}
-                  </Link>
-                ) : null}
-                <div className="rounded-[10px] border border-border bg-background px-3 py-1.5 text-[13px] font-semibold capitalize text-foreground">
-                  {formatMonthHeading(selectedMonthKey)}
-                </div>
-                <Link
-                  href={`/?month=${nextMonthKey}`}
-                  aria-label="Mes siguiente"
-                  className="flex h-8 w-8 items-center justify-center rounded-[9px] border border-border bg-background text-sm font-semibold text-muted transition hover:bg-surface"
-                >
-                  {">"}
-                </Link>
+            <div className="flex justify-start">
+              <div className="rounded-[10px] border border-border bg-background px-3 py-1.5 text-[13px] font-semibold capitalize text-foreground shadow-[inset_0_1px_0_rgba(255,255,255,0.35)]">
+                {formatMonthHeading(selectedMonthKey)}
               </div>
             </div>
 
@@ -355,68 +282,72 @@ export default async function Home({ searchParams }: HomePageProps) {
               </div>
             ) : (
               <div className="mt-5 rounded-[16px] border border-border bg-background px-3 py-3">
-                <div className="flex justify-center">
-                  <div className="w-fit">
-                    <div className="mb-1 inline-grid grid-cols-[repeat(7,1.1rem)] gap-px text-center text-[7px] font-semibold uppercase tracking-[0.05em] text-muted sm:grid-cols-[repeat(7,1.35rem)]">
-                      {calendarWeekdays.map((weekday) => (
-                        <div key={weekday}>{weekday}</div>
-                      ))}
-                    </div>
+                <div className="mb-2 grid grid-cols-7 gap-px text-center text-[7px] font-semibold uppercase tracking-[0.05em] text-muted sm:text-[8px]">
+                  {calendarWeekdays.map((weekday) => (
+                    <div key={weekday}>{weekday}</div>
+                  ))}
+                </div>
 
-                    <div className="inline-grid grid-cols-[repeat(7,1.1rem)] gap-px sm:grid-cols-[repeat(7,1.35rem)]">
-                      {Array.from({ length: monthOffset }).map((_, index) => (
-                        <div key={`month-offset-${index}`} />
-                      ))}
-                      {calendarDays.map((day) => {
-                        const isSelected = day.availableMenuDay?.id === menuDay?.id;
-                        const isToday = day.dateKey === todayKey;
+                <div className="grid grid-cols-7 gap-px">
+                  {calendarDays.map((day) => {
+                    const isSelected = day.availableMenuDay?.id === menuDay?.id;
+                    const isToday = day.dateKey === todayKey;
 
-                        if (day.availableMenuDay && day.hasOptions && !day.isPast) {
-                          return (
-                            <Link
-                              key={day.dateKey}
-                              href={`/?month=${selectedMonthKey}&menuDay=${day.availableMenuDay.id}`}
-                              title={`${formatMenuDate(day.date)} · ${day.availableMenuDay._count.options} opciones`}
-                              className={`flex h-[1.1rem] w-[1.1rem] items-center justify-center rounded-[3px] border text-[7px] font-medium leading-none shadow-[inset_0_1px_0_rgba(255,255,255,0.35)] transition hover:scale-[1.01] hover:shadow-[0_6px_14px_-10px_rgba(29,29,27,0.55)] sm:h-[1.35rem] sm:w-[1.35rem] sm:text-[8px] ${
-                                isSelected
-                                  ? "border-[var(--accent)] bg-[rgba(180,83,9,0.14)] text-[var(--accent)] ring-2 ring-[rgba(180,83,9,0.2)]"
-                                  : isToday
-                                    ? "border-[rgba(180,83,9,0.4)] bg-[rgba(180,83,9,0.08)] text-foreground"
-                                    : "border-border bg-white text-foreground"
-                              }`}
-                            >
-                              {day.dayNumber}
-                            </Link>
-                          );
-                        }
+                    if (day.isPast) {
+                      return null;
+                    }
 
-                        if (day.availableMenuDay && !day.hasOptions && !day.isPast) {
-                          return (
-                            <div
-                              key={day.dateKey}
-                              title={`${formatMenuDate(day.date)} · Sin opciones cargadas`}
-                              className="flex h-[1.1rem] w-[1.1rem] items-center justify-center rounded-[3px] border border-dashed border-border bg-[rgba(255,253,248,0.7)] text-[7px] font-medium leading-none text-muted sm:h-[1.35rem] sm:w-[1.35rem] sm:text-[8px]"
-                            >
-                              {day.dayNumber}
-                            </div>
-                          );
-                        }
+                    if (day.availableMenuDay && day.hasOptions) {
+                      return (
+                        <Link
+                          key={day.dateKey}
+                          href={`/?menuDay=${day.availableMenuDay.id}`}
+                          title={`${formatMenuDate(day.date)} · ${day.availableMenuDay._count.options} opciones`}
+                          className={`flex h-3.5 w-full items-center justify-center rounded-[3px] border text-[7px] font-semibold leading-none transition hover:bg-surface sm:h-4 sm:text-[8px] ${
+                            isSelected
+                              ? "border-[var(--accent)] bg-[rgba(180,83,9,0.14)] text-[var(--accent)] ring-1 ring-[rgba(180,83,9,0.2)]"
+                              : isToday
+                                ? "border-[rgba(180,83,9,0.4)] bg-[rgba(180,83,9,0.08)] text-foreground"
+                                : "border-border bg-white text-foreground"
+                          }`}
+                        >
+                          {day.dayNumber}
+                        </Link>
+                      );
+                    }
 
-                        return (
-                          <div
-                            key={day.dateKey}
-                            className={`flex h-[1.1rem] w-[1.1rem] items-center justify-center rounded-[3px] border text-[7px] font-medium leading-none sm:h-[1.35rem] sm:w-[1.35rem] sm:text-[8px] ${
-                              day.isPast
-                                ? "border-transparent bg-transparent text-[rgba(107,102,93,0.35)]"
-                                : "border-transparent bg-transparent text-muted"
-                            }`}
-                          >
-                            {day.dayNumber}
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
+                    if (day.availableMenuDay && !day.hasOptions) {
+                      return (
+                        <div
+                          key={day.dateKey}
+                          title={`${formatMenuDate(day.date)} · Sin opciones cargadas`}
+                          className="flex h-3.5 w-full items-center justify-center rounded-[3px] border border-dashed border-border bg-[rgba(255,253,248,0.7)] text-[7px] font-medium leading-none text-muted sm:h-4 sm:text-[8px]"
+                        >
+                          {day.dayNumber}
+                        </div>
+                      );
+                    }
+
+                    return (
+                      <div
+                        key={day.dateKey}
+                        className="flex h-3.5 w-full items-center justify-center rounded-[3px] border border-transparent bg-transparent text-[7px] font-medium leading-none text-muted sm:h-4 sm:text-[8px]"
+                      >
+                        {day.dayNumber}
+                      </div>
+                    );
+                  })}
+                </div>
+
+                <div className="mt-3 flex flex-wrap gap-3 text-[11px] text-muted">
+                  <span className="inline-flex items-center gap-2">
+                    <span className="h-2.5 w-2.5 rounded-[3px] border border-border bg-white" />
+                    Fecha con menu
+                  </span>
+                  <span className="inline-flex items-center gap-2">
+                    <span className="h-2.5 w-2.5 rounded-[3px] border border-[rgba(180,83,9,0.4)] bg-[rgba(180,83,9,0.08)]" />
+                    Hoy
+                  </span>
                 </div>
               </div>
             )}
@@ -555,7 +486,7 @@ export default async function Home({ searchParams }: HomePageProps) {
 
         <section className="rounded-[2rem] border border-border bg-surface p-6 sm:p-8">
           <h2 className="text-2xl font-semibold tracking-tight">
-            Resumen del menu
+            Resumen
           </h2>
           <p className="mt-3 text-sm leading-6 text-muted">
             Vista rapida de las selecciones registradas para la fecha elegida.
@@ -569,13 +500,18 @@ export default async function Home({ searchParams }: HomePageProps) {
           ) : (
             <div className="mt-6 space-y-6">
               <div className="space-y-3">
-                {menuDay.options.map((option) => (
+                {menuDay.options.map((option, index) => (
                   <div
                     key={option.id}
                     className="rounded-2xl border border-border bg-background px-4 py-4"
                   >
                     <div className="flex items-center justify-between gap-4">
-                      <h3 className="text-sm font-semibold">{option.name}</h3>
+                      <div className="space-y-1">
+                        <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-muted">
+                          Menu {index + 1}
+                        </p>
+                        <h3 className="text-sm font-semibold">{option.name}</h3>
+                      </div>
                       <span className="rounded-full bg-surface px-3 py-1 text-xs font-semibold text-muted">
                         {selectionsByOption.get(option.id) ?? 0}
                       </span>
