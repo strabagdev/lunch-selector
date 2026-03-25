@@ -1,0 +1,65 @@
+generator client {
+  provider   = "prisma-client"
+  output     = "../generated/prisma"
+  engineType = "client"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Person {
+  id         String           @id @default(cuid())
+  name       String
+  isActive   Boolean          @default(true)
+  createdAt  DateTime         @default(now())
+  updatedAt  DateTime         @updatedAt
+  selections LunchSelection[]
+
+  @@unique([name])
+}
+
+model MenuDay {
+  id         String           @id @default(cuid())
+  date       DateTime         @db.Date
+  label      String?
+  isOpen     Boolean          @default(true)
+  createdAt  DateTime         @default(now())
+  updatedAt  DateTime         @updatedAt
+  options    MenuOption[]
+  selections LunchSelection[]
+
+  @@unique([date])
+}
+
+model MenuOption {
+  id          String           @id @default(cuid())
+  menuDayId   String
+  name        String
+  description String?
+  sortOrder   Int              @default(0)
+  isAvailable Boolean          @default(true)
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+  menuDay     MenuDay          @relation(fields: [menuDayId], references: [id], onDelete: Cascade)
+  selections  LunchSelection[]
+
+  @@unique([id, menuDayId])
+  @@unique([menuDayId, name])
+  @@index([menuDayId, sortOrder])
+}
+
+model LunchSelection {
+  id           String     @id @default(cuid())
+  personId     String
+  menuDayId    String
+  menuOptionId String
+  selectedAt   DateTime   @default(now())
+  person       Person     @relation(fields: [personId], references: [id], onDelete: Cascade)
+  menuDay      MenuDay    @relation(fields: [menuDayId], references: [id], onDelete: Cascade)
+  menuOption   MenuOption @relation(fields: [menuOptionId, menuDayId], references: [id, menuDayId], onDelete: Cascade)
+
+  @@unique([personId, menuDayId])
+  @@index([menuDayId])
+  @@index([menuOptionId])
+}

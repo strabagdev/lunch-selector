@@ -1,36 +1,59 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+## Lunch Selector
 
-## Getting Started
+MVP en Next.js para seleccionar almuerzos diarios por persona, con administraci&oacute;n de personas, d&iacute;as de men&uacute;, opciones por d&iacute;a y reportes.
 
-First, run the development server:
+## Base actual
+
+- App Router listo con rutas p&uacute;blicas y administrativas.
+- Sin autenticaci&oacute;n.
+- Prisma configurado para PostgreSQL.
+- Modelo inicial pensado para despliegue futuro en Railway.
+
+## Modelo de datos
+
+- `Person`: personas que pueden seleccionar almuerzo.
+- `MenuDay`: un d&iacute;a de men&uacute; por fecha.
+- `MenuOption`: opciones disponibles para un `MenuDay`.
+- `LunchSelection`: selecci&oacute;n de una persona para un d&iacute;a.
+
+Reglas incluidas en el esquema:
+
+- Una persona solo puede tener una selecci&oacute;n por d&iacute;a: `@@unique([personId, menuDayId])`.
+- Cada d&iacute;a tiene su propio conjunto de opciones.
+- La selecci&oacute;n apunta a una opci&oacute;n del mismo d&iacute;a de men&uacute;.
+
+## Primeros pasos
+
+1. Crear variables de entorno:
+
+```bash
+cp .env.example .env
+```
+
+2. Instalar dependencias:
+
+```bash
+npm install
+```
+
+3. Generar Prisma Client:
+
+```bash
+npm run prisma:generate
+```
+
+4. Crear la primera migraci&oacute;n cuando ya tengas PostgreSQL disponible:
+
+```bash
+npm run prisma:migrate:dev -- --name init
+```
+
+5. Levantar la app:
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Siguiente paso sugerido
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
-
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
-
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Implementar acciones y formularios para administrar personas, d&iacute;as de men&uacute; y opciones usando este esquema como base.
