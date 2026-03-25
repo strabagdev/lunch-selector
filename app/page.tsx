@@ -1,62 +1,616 @@
 import Link from "next/link";
+import { revalidatePath } from "next/cache";
+import { prisma } from "@/lib/prisma";
 
-export default function Home() {
+export const dynamic = "force-dynamic";
+
+type HomePageProps = {
+  searchParams: Promise<{
+    menuDay?: string | string[] | undefined;
+    month?: string | string[] | undefined;
+  }>;
+};
+
+function formatMenuDate(date: Date) {
+  return new Intl.DateTimeFormat("es-CL", {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  }).format(date);
+}
+
+function getTodayKey() {
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: "America/Santiago",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(new Date());
+}
+
+function getMenuDayParam(value: string | string[] | undefined) {
+  return Array.isArray(value) ? value[0] : value;
+}
+
+function getMonthParam(value: string | string[] | undefined) {
+  const month = Array.isArray(value) ? value[0] : value;
+  return month && /^\d{4}-\d{2}$/.test(month) ? month : undefined;
+}
+
+function getDateKey(date: Date) {
+  return date.toISOString().slice(0, 10);
+}
+
+function getMonthKey(date: Date) {
+  return date.toISOString().slice(0, 7);
+}
+
+function getMonthStart(monthKey: string) {
+  return new Date(`${monthKey}-01T00:00:00.000Z`);
+}
+
+function addMonths(monthKey: string, amount: number) {
+  const date = getMonthStart(monthKey);
+  date.setUTCMonth(date.getUTCMonth() + amount);
+  return getMonthKey(date);
+}
+
+function formatMonthHeading(monthKey: string) {
+  return new Intl.DateTimeFormat("es-CL", {
+    month: "long",
+    year: "numeric",
+  }).format(getMonthStart(monthKey));
+}
+
+export default async function Home({ searchParams }: HomePageProps) {
+  const resolvedSearchParams = await searchParams;
+  const requestedMenuDayId = getMenuDayParam(resolvedSearchParams.menuDay);
+  const requestedMonth = getMonthParam(resolvedSearchParams.month);
+  const todayKey = getTodayKey();
+  const currentMonthKey = todayKey.slice(0, 7);
+  const todayDate = new Date(`${todayKey}T00:00:00.000Z`);
+
+  const [people, availableMenuDays] = await Promise.all([
+    prisma.person.findMany({
+      where: { isActive: true },
+      orderBy: { name: "asc" },
+    }),
+    prisma.menuDay.findMany({
+      where: {
+        isOpen: true,
+        date: {
+          gte: todayDate,
+        },
+      },
+      orderBy: { date: "asc" },
+      select: {
+        id: true,
+        date: true,
+        label: true,
+        _count: {
+          select: {
+            options: {
+              where: {
+                isAvailable: true,
+              },
+            },
+            selections: true,
+          },
+        },
+      },
+    }),
+  ]);
+
+  const selectableMenuDays = availableMenuDays.filter(
+    (availableMenuDay) => availableMenuDay._count.options > 0,
+  );
+
+  const requestedMenuDaySummary =
+    selectableMenuDays.find((menuDay) => menuDay.id === requestedMenuDayId) ?? null;
+
+  const selectedMonthKey =
+    requestedMonth && requestedMonth >= currentMonthKey
+      ? requestedMonth
+      : requestedMenuDaySummary
+        ? getMonthKey(requestedMenuDaySummary.date)
+        : currentMonthKey;
+
+  const selectedMonthStart = getMonthStart(selectedMonthKey);
+  const daysInSelectedMonth = new Date(
+    Date.UTC(
+      selectedMonthStart.getUTCFullYear(),
+      selectedMonthStart.getUTCMonth() + 1,
+      0,
+    ),
+  ).getUTCDate();
+  const monthOffset = (selectedMonthStart.getUTCDay() + 6) % 7;
+  const nextMonthKey = addMonths(selectedMonthKey, 1);
+  const previousMonthKey =
+    selectedMonthKey > currentMonthKey ? addMonths(selectedMonthKey, -1) : null;
+  const calendarWeekdays = ["Lun", "Mar", "Mie", "Jue", "Vie", "Sab", "Dom"];
+  const menuDayByDateKey = new Map(
+    availableMenuDays.map((availableMenuDay) => [
+      getDateKey(availableMenuDay.date),
+      availableMenuDay,
+    ]),
+  );
+  const visibleSelectableMenuDays = selectableMenuDays.filter(
+    (availableMenuDay) => getMonthKey(availableMenuDay.date) === selectedMonthKey,
+  );
+  const selectedMenuDaySummary =
+    requestedMenuDaySummary &&
+    getMonthKey(requestedMenuDaySummary.date) === selectedMonthKey
+      ? requestedMenuDaySummary
+      : selectedMonthKey === currentMonthKey
+        ? visibleSelectableMenuDays.find(
+            (availableMenuDay) => getDateKey(availableMenuDay.date) === todayKey,
+          ) ??
+          visibleSelectableMenuDays[0] ??
+          null
+        : visibleSelectableMenuDays[0] ?? null;
+  const calendarDays = Array.from({ length: daysInSelectedMonth }, (_, index) => {
+    const date = new Date(
+      Date.UTC(
+        selectedMonthStart.getUTCFullYear(),
+        selectedMonthStart.getUTCMonth(),
+        index + 1,
+      ),
+    );
+    const dateKey = getDateKey(date);
+    const availableMenuDay = menuDayByDateKey.get(dateKey);
+    const hasOptions = (availableMenuDay?._count.options ?? 0) > 0;
+    const isPast = dateKey < todayKey;
+
+    return {
+      date,
+      dateKey,
+      dayNumber: index + 1,
+      availableMenuDay,
+      hasOptions,
+      isPast,
+    };
+  });
+
+  const menuDay = selectedMenuDaySummary
+    ? await prisma.menuDay.findUnique({
+        where: { id: selectedMenuDaySummary.id },
+        include: {
+          options: {
+            where: { isAvailable: true },
+            orderBy: [{ sortOrder: "asc" }, { name: "asc" }],
+          },
+          selections: {
+            include: {
+              person: true,
+              menuOption: true,
+            },
+            orderBy: { selectedAt: "asc" },
+          },
+        },
+      })
+    : null;
+
+  async function submitSelection(formData: FormData) {
+    "use server";
+
+    const personId = String(formData.get("personId") ?? "");
+    const menuDayId = String(formData.get("menuDayId") ?? "");
+    const menuOptionId = String(formData.get("menuOptionId") ?? "");
+
+    if (!personId || !menuDayId || !menuOptionId) {
+      return;
+    }
+
+    const [person, selectedMenuDay, option] = await Promise.all([
+      prisma.person.findUnique({
+        where: { id: personId },
+        select: { id: true, isActive: true },
+      }),
+      prisma.menuDay.findUnique({
+        where: { id: menuDayId },
+        select: { id: true, isOpen: true },
+      }),
+      prisma.menuOption.findFirst({
+        where: {
+          id: menuOptionId,
+          menuDayId,
+          isAvailable: true,
+        },
+        select: { id: true },
+      }),
+    ]);
+
+    if (!person?.isActive || !selectedMenuDay?.isOpen || !option) {
+      return;
+    }
+
+    await prisma.lunchSelection.upsert({
+      where: {
+        personId_menuDayId: {
+          personId,
+          menuDayId,
+        },
+      },
+      update: {
+        menuOptionId,
+      },
+      create: {
+        personId,
+        menuDayId,
+        menuOptionId,
+      },
+    });
+
+    revalidatePath("/");
+  }
+
+  const selectionsByOption = new Map(
+    menuDay?.options.map((option) => [option.id, 0]) ?? [],
+  );
+  const selectedPersonIds = new Set(
+    menuDay?.selections.map((selection) => selection.personId) ?? [],
+  );
+  const availablePeople = people.filter((person) => !selectedPersonIds.has(person.id));
+
+  for (const selection of menuDay?.selections ?? []) {
+    selectionsByOption.set(
+      selection.menuOptionId,
+      (selectionsByOption.get(selection.menuOptionId) ?? 0) + 1,
+    );
+  }
+
   return (
-    <main className="mx-auto flex w-full max-w-5xl flex-1 flex-col justify-center px-6 py-16 sm:px-10">
-      <div className="rounded-[2rem] border border-border bg-surface p-8 shadow-[0_24px_80px_rgba(29,29,27,0.08)] sm:p-12">
-        <div className="max-w-2xl space-y-6">
-          <p className="text-sm font-semibold uppercase tracking-[0.2em] text-accent">
-            MVP
-          </p>
-          <div className="space-y-3">
-            <h1 className="text-4xl font-semibold tracking-tight sm:text-5xl">
-              Lunch Selector
-            </h1>
-            <p className="text-lg leading-8 text-muted">
-              Base inicial para seleccionar almuerzos por persona y administrar
-              personas, d&iacute;as de men&uacute; y reportes.
+    <main className="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-8 px-6 py-10 sm:px-10">
+      <section className="rounded-[26px] border border-border bg-surface p-6 shadow-[0_24px_80px_rgba(29,29,27,0.08)] sm:p-8">
+        <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_320px] lg:items-start lg:gap-6">
+          <div className="max-w-xl space-y-2.5 xl:pt-1">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-accent">
+              Seleccion diaria
             </p>
+            <div className="space-y-2">
+              <h1 className="text-3xl font-semibold leading-none tracking-tight sm:text-4xl xl:text-[2.35rem]">
+                Almuerzos Nogales
+              </h1>
+              <p className="text-[15px] leading-6 text-muted">
+                Selecciona una fecha disponible, identificate y confirma tu
+                almuerzo.
+              </p>
+            </div>
           </div>
+
+          <section className="self-start rounded-[20px] border border-border bg-background px-4 py-4">
+            {menuDay ? (
+              <div className="space-y-2.5">
+                <div className="space-y-1">
+                  <p className="text-[9px] font-semibold uppercase tracking-[0.18em] text-accent">
+                    Fecha seleccionada
+                  </p>
+                  <p className="text-lg font-semibold leading-tight tracking-tight sm:text-xl">
+                    {formatMenuDate(menuDay.date)}
+                  </p>
+                  {menuDay.label ? (
+                    <p className="text-[12px] leading-4 text-muted">{menuDay.label}</p>
+                  ) : null}
+                  <p className="text-[12px] leading-4 text-muted">
+                    {menuDay.selections.length} selecciones registradas de{" "}
+                    {people.length} personas activas.
+                  </p>
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-accent">
+                  Fecha seleccionada
+                </p>
+                <p className="text-sm leading-6 text-muted">
+                  Todavia no hay fechas de menu disponibles. Puedes cargarlas
+                  desde administracion.
+                </p>
+              </div>
+            )}
+          </section>
+        </div>
+      </section>
+
+      <div className="grid gap-6 lg:grid-cols-[minmax(0,1.2fr)_minmax(0,0.8fr)]">
+        <div className="space-y-6">
+          <section className="rounded-[20px] border border-border bg-surface p-5 sm:p-6">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+              <div className="space-y-2">
+                <h2 className="text-2xl font-semibold tracking-tight">
+                  Elegir fecha
+                </h2>
+                <p className="max-w-2xl text-sm leading-6 text-muted">
+                  Puedes seleccionar hoy o cualquier fecha futura con menu
+                  cargado.
+                </p>
+              </div>
+              <div className="flex items-center gap-2 self-start">
+                {previousMonthKey ? (
+                  <Link
+                    href={`/?month=${previousMonthKey}`}
+                    aria-label="Mes anterior"
+                    className="flex h-8 w-8 items-center justify-center rounded-[9px] border border-border bg-background text-sm font-semibold text-muted transition hover:bg-surface"
+                  >
+                    {"<"}
+                  </Link>
+                ) : null}
+                <div className="rounded-[10px] border border-border bg-background px-3 py-1.5 text-[13px] font-semibold capitalize text-foreground">
+                  {formatMonthHeading(selectedMonthKey)}
+                </div>
+                <Link
+                  href={`/?month=${nextMonthKey}`}
+                  aria-label="Mes siguiente"
+                  className="flex h-8 w-8 items-center justify-center rounded-[9px] border border-border bg-background text-sm font-semibold text-muted transition hover:bg-surface"
+                >
+                  {">"}
+                </Link>
+              </div>
+            </div>
+
+            {availableMenuDays.length === 0 ? (
+              <div className="mt-6 rounded-3xl border border-dashed border-border bg-background px-5 py-4 text-sm leading-6 text-muted">
+                No hay dias de menu disponibles para elegir.
+              </div>
+            ) : (
+              <div className="mt-5 rounded-[16px] border border-border bg-background px-3 py-3">
+                <div className="flex justify-center">
+                  <div className="w-fit">
+                    <div className="mb-1 inline-grid grid-cols-[repeat(7,1.1rem)] gap-px text-center text-[7px] font-semibold uppercase tracking-[0.05em] text-muted sm:grid-cols-[repeat(7,1.35rem)]">
+                      {calendarWeekdays.map((weekday) => (
+                        <div key={weekday}>{weekday}</div>
+                      ))}
+                    </div>
+
+                    <div className="inline-grid grid-cols-[repeat(7,1.1rem)] gap-px sm:grid-cols-[repeat(7,1.35rem)]">
+                      {Array.from({ length: monthOffset }).map((_, index) => (
+                        <div key={`month-offset-${index}`} />
+                      ))}
+                      {calendarDays.map((day) => {
+                        const isSelected = day.availableMenuDay?.id === menuDay?.id;
+                        const isToday = day.dateKey === todayKey;
+
+                        if (day.availableMenuDay && day.hasOptions && !day.isPast) {
+                          return (
+                            <Link
+                              key={day.dateKey}
+                              href={`/?month=${selectedMonthKey}&menuDay=${day.availableMenuDay.id}`}
+                              title={`${formatMenuDate(day.date)} · ${day.availableMenuDay._count.options} opciones`}
+                              className={`flex h-[1.1rem] w-[1.1rem] items-center justify-center rounded-[3px] border text-[7px] font-medium leading-none shadow-[inset_0_1px_0_rgba(255,255,255,0.35)] transition hover:scale-[1.01] hover:shadow-[0_6px_14px_-10px_rgba(29,29,27,0.55)] sm:h-[1.35rem] sm:w-[1.35rem] sm:text-[8px] ${
+                                isSelected
+                                  ? "border-[var(--accent)] bg-[rgba(180,83,9,0.14)] text-[var(--accent)] ring-2 ring-[rgba(180,83,9,0.2)]"
+                                  : isToday
+                                    ? "border-[rgba(180,83,9,0.4)] bg-[rgba(180,83,9,0.08)] text-foreground"
+                                    : "border-border bg-white text-foreground"
+                              }`}
+                            >
+                              {day.dayNumber}
+                            </Link>
+                          );
+                        }
+
+                        if (day.availableMenuDay && !day.hasOptions && !day.isPast) {
+                          return (
+                            <div
+                              key={day.dateKey}
+                              title={`${formatMenuDate(day.date)} · Sin opciones cargadas`}
+                              className="flex h-[1.1rem] w-[1.1rem] items-center justify-center rounded-[3px] border border-dashed border-border bg-[rgba(255,253,248,0.7)] text-[7px] font-medium leading-none text-muted sm:h-[1.35rem] sm:w-[1.35rem] sm:text-[8px]"
+                            >
+                              {day.dayNumber}
+                            </div>
+                          );
+                        }
+
+                        return (
+                          <div
+                            key={day.dateKey}
+                            className={`flex h-[1.1rem] w-[1.1rem] items-center justify-center rounded-[3px] border text-[7px] font-medium leading-none sm:h-[1.35rem] sm:w-[1.35rem] sm:text-[8px] ${
+                              day.isPast
+                                ? "border-transparent bg-transparent text-[rgba(107,102,93,0.35)]"
+                                : "border-transparent bg-transparent text-muted"
+                            }`}
+                          >
+                            {day.dayNumber}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+          </section>
+
+          <section className="rounded-[2rem] border border-border bg-surface p-6 sm:p-8">
+            <h2 className="text-2xl font-semibold tracking-tight">
+              Identificacion
+            </h2>
+            <p className="mt-3 max-w-2xl text-sm leading-6 text-muted">
+              Selecciona tu nombre antes de elegir tu almuerzo del dia.
+            </p>
+
+            {people.length === 0 ? (
+              <div className="mt-6 rounded-3xl border border-dashed border-border bg-background px-5 py-4 text-sm leading-6 text-muted">
+                No hay personas activas disponibles. Agregalas desde
+                administracion para poder usar el selector.
+              </div>
+            ) : menuDay && availablePeople.length === 0 ? (
+              <div className="mt-6 rounded-3xl border border-dashed border-border bg-background px-5 py-4 text-sm leading-6 text-muted">
+                Todas las personas activas ya registraron su eleccion para esta
+                fecha.
+              </div>
+            ) : (
+              <div className="mt-6 rounded-3xl border border-border bg-background px-5 py-5">
+                <label className="block space-y-2">
+                  <span className="text-sm font-medium">Persona</span>
+                  <select
+                    form="lunch-selection-form"
+                    name="personId"
+                    required
+                    defaultValue=""
+                    className="w-full rounded-2xl border border-border bg-surface px-4 py-3 text-sm outline-none transition-colors focus:border-accent"
+                  >
+                    <option value="" disabled>
+                      Selecciona tu nombre
+                    </option>
+                    {availablePeople.map((person) => (
+                      <option key={person.id} value={person.id}>
+                        {person.name}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              </div>
+            )}
+          </section>
+
+          <section className="rounded-[2rem] border border-border bg-surface p-6 sm:p-8">
+            <h2 className="text-2xl font-semibold tracking-tight">
+              Elegir almuerzo
+            </h2>
+            <p className="mt-3 max-w-2xl text-sm leading-6 text-muted">
+              Cada persona puede dejar una sola seleccion por fecha. Si vuelve a
+              enviar el formulario, su opcion anterior se actualiza.
+            </p>
+
+            {!menuDay ||
+            menuDay.options.length === 0 ||
+            people.length === 0 ||
+            availablePeople.length === 0 ? (
+              <div className="mt-6 rounded-3xl border border-dashed border-border bg-background px-5 py-4 text-sm leading-6 text-muted">
+                No hay suficientes datos para registrar selecciones. Revisa que
+                existan personas activas, fechas disponibles y opciones cargadas
+                para el menu seleccionado.
+              </div>
+            ) : (
+              <form
+                id="lunch-selection-form"
+                action={submitSelection}
+                className="mt-6 space-y-6"
+              >
+                <input type="hidden" name="menuDayId" value={menuDay.id} />
+
+                <fieldset className="space-y-3">
+                  <legend className="text-sm font-medium">Opciones del menu</legend>
+                  <div className="rounded-[18px] border border-border bg-background px-4 py-4">
+                    <div className="mb-3 flex items-center justify-between gap-3 border-b border-[rgba(107,102,93,0.12)] pb-2">
+                      <div className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted">
+                        Mosaico del dia
+                      </div>
+                      <span className="rounded-full bg-surface px-2 py-0.5 text-[10px] text-muted">
+                        {menuDay.options.length} opciones
+                      </span>
+                    </div>
+
+                    <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+                      {menuDay.options.map((option) => (
+                        <label key={option.id} className="block cursor-pointer">
+                          <input
+                            type="radio"
+                            name="menuOptionId"
+                            value={option.id}
+                            required
+                            className="peer sr-only"
+                          />
+                          <span className="block rounded-[18px] border border-border bg-white px-4 py-4 shadow-[0_10px_30px_-26px_rgba(29,29,27,0.28)] transition duration-150 hover:-translate-y-0.5 hover:bg-surface hover:shadow-[0_16px_28px_-24px_rgba(29,29,27,0.35)] peer-checked:border-[var(--accent)] peer-checked:ring-2 peer-checked:ring-[rgba(180,83,9,0.18)]">
+                            <span className="flex items-start justify-between gap-3">
+                              <span className="block min-w-0">
+                                <span className="block text-[11px] font-semibold uppercase tracking-[0.16em] text-muted">
+                                  Opcion
+                                </span>
+                                <span className="mt-2 block text-sm font-semibold leading-5">
+                                  {option.name}
+                                </span>
+                              </span>
+                              <span className="rounded-[10px] border border-[rgba(107,102,93,0.16)] bg-surface px-2 py-1 text-[11px] font-semibold text-muted peer-checked:border-[rgba(180,83,9,0.2)] peer-checked:text-accent">
+                                {selectionsByOption.get(option.id) ?? 0}
+                              </span>
+                            </span>
+                            {option.description ? (
+                              <span className="mt-3 block text-sm leading-6 text-muted">
+                                {option.description}
+                              </span>
+                            ) : null}
+                            <span className="mt-4 block text-[11px] font-medium text-muted peer-checked:text-accent">
+                              Seleccionar esta opcion
+                            </span>
+                          </span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+                </fieldset>
+
+                <button
+                  type="submit"
+                  className="rounded-2xl bg-foreground px-5 py-3 text-sm font-medium text-background transition-transform hover:-translate-y-0.5"
+                >
+                  Confirmar seleccion
+                </button>
+              </form>
+            )}
+          </section>
         </div>
 
-        <div className="mt-10 grid gap-4 sm:grid-cols-2">
-          <Link
-            href="/admin"
-            className="rounded-2xl bg-foreground px-5 py-4 text-sm font-medium text-background transition-transform hover:-translate-y-0.5"
-          >
-            Ir a administraci&oacute;n
-          </Link>
-          <Link
-            href="/admin/menu-days"
-            className="rounded-2xl border border-border px-5 py-4 text-sm font-medium transition-colors hover:bg-background"
-          >
-            Ver d&iacute;as de men&uacute;
-          </Link>
-        </div>
+        <section className="rounded-[2rem] border border-border bg-surface p-6 sm:p-8">
+          <h2 className="text-2xl font-semibold tracking-tight">
+            Resumen del menu
+          </h2>
+          <p className="mt-3 text-sm leading-6 text-muted">
+            Vista rapida de las selecciones registradas para la fecha elegida.
+          </p>
 
-        <div className="mt-12 grid gap-4 md:grid-cols-3">
-          <section className="rounded-2xl border border-border bg-background px-5 py-4">
-            <h2 className="text-base font-semibold">Selecci&oacute;n diaria</h2>
-            <p className="mt-2 text-sm leading-6 text-muted">
-              La persona elegir&aacute; su nombre y una sola opci&oacute;n de almuerzo por
-              d&iacute;a.
+          {!menuDay ? (
+            <p className="mt-6 text-sm leading-6 text-muted">
+              Cuando exista una fecha disponible, aqui veras el conteo por
+              opcion y las personas que ya eligieron.
             </p>
-          </section>
-          <section className="rounded-2xl border border-border bg-background px-5 py-4">
-            <h2 className="text-base font-semibold">Administraci&oacute;n</h2>
-            <p className="mt-2 text-sm leading-6 text-muted">
-              Secciones listas para crecer con personas, men&uacute;s diarios y
-              reportes.
-            </p>
-          </section>
-          <section className="rounded-2xl border border-border bg-background px-5 py-4">
-            <h2 className="text-base font-semibold">Siguiente etapa</h2>
-            <p className="mt-2 text-sm leading-6 text-muted">
-              Luego podremos conectar PostgreSQL y preparar despliegue en
-              Railway.
-            </p>
-          </section>
-        </div>
+          ) : (
+            <div className="mt-6 space-y-6">
+              <div className="space-y-3">
+                {menuDay.options.map((option) => (
+                  <div
+                    key={option.id}
+                    className="rounded-2xl border border-border bg-background px-4 py-4"
+                  >
+                    <div className="flex items-center justify-between gap-4">
+                      <h3 className="text-sm font-semibold">{option.name}</h3>
+                      <span className="rounded-full bg-surface px-3 py-1 text-xs font-semibold text-muted">
+                        {selectionsByOption.get(option.id) ?? 0}
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <div className="border-t border-border pt-6">
+                <h3 className="text-sm font-semibold">Personas que ya eligieron</h3>
+                {menuDay.selections.length === 0 ? (
+                  <p className="mt-3 text-sm leading-6 text-muted">
+                    Aun no hay selecciones registradas.
+                  </p>
+                ) : (
+                  <ul className="mt-3 space-y-3">
+                    {menuDay.selections.map((selection) => (
+                      <li
+                        key={selection.id}
+                        className="flex items-center justify-between gap-4 rounded-2xl border border-border bg-background px-4 py-3"
+                      >
+                        <span className="text-sm font-medium">
+                          {selection.person.name}
+                        </span>
+                        <span className="text-sm text-muted">
+                          {selection.menuOption.name}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            </div>
+          )}
+        </section>
       </div>
     </main>
   );

@@ -23,7 +23,7 @@ export default function AdminLayout({
             Administraci&oacute;n
           </p>
           <h1 className="mt-3 text-3xl font-semibold tracking-tight">
-            Lunch Selector
+            Almuerzos Nogales
           </h1>
           <p className="mt-3 max-w-2xl text-sm leading-6 text-muted">
             Espacio base para administrar personas, men&uacute;s diarios y reportes

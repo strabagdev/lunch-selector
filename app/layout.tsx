@@ -14,8 +14,8 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: {
-    default: "Lunch Selector",
-    template: "%s | Lunch Selector",
+    default: "Almuerzos Nogales",
+    template: "%s | Almuerzos Nogales",
   },
   description: "MVP para seleccionar almuerzos diarios por persona.",
 };
