@@ -20,6 +20,10 @@ type MenuDayItem = {
   dayNumber: number;
   options: MenuOptionItem[];
   selectedPersonIds: string[];
+  selections?: Array<{
+    personId: string;
+    menuOptionName: string;
+  }>;
 };
 
 type HomeFlowProps = {
@@ -91,6 +95,26 @@ export function HomeFlow({
     selectedMenuDay?.options.find((option) => option.id === selectedMenuOptionId) ?? null;
 
   const selectedPerson = people.find((person) => person.id === selectedPersonId) ?? null;
+  const selectedPersonCoveredDays = selectedPersonId
+    ? menuDays
+        .flatMap((menuDay) => {
+          const selection = menuDay.selections?.find(
+            (menuDaySelection) => menuDaySelection.personId === selectedPersonId,
+          );
+
+          if (!selection) {
+            return [];
+          }
+
+          return [
+            {
+              menuDayId: menuDay.id,
+              fullDateLabel: menuDay.fullDateLabel,
+              menuOptionName: selection.menuOptionName,
+            },
+          ];
+        })
+    : [];
   const selectedPersonHasAnyAvailableDate = selectedPersonId
     ? menuDays.some((menuDay) => !menuDay.selectedPersonIds.includes(selectedPersonId))
     : false;
@@ -117,7 +141,7 @@ export function HomeFlow({
                 Seleccion diaria
               </p>
               <h1 className="whitespace-nowrap text-[1.65rem] font-semibold leading-none tracking-tight sm:text-4xl xl:text-[2.35rem]">
-                Registro de almuerzo diario
+                Registro de almuerzo
               </h1>
             </div>
             <p className="text-sm font-medium text-accent sm:pt-1 sm:text-right">
@@ -256,6 +280,36 @@ export function HomeFlow({
               </label>
             </div>
 
+            {selectedPerson ? (
+              <div className="mt-5 rounded-[18px] border border-border bg-[rgba(17,32,28,0.03)] px-4 py-3">
+                {selectedPersonCoveredDays.length > 0 ? (
+                  <div className="space-y-2">
+                    <p className="text-xs leading-5 text-muted">
+                      Ya est&aacute;s cubierto en {selectedPersonCoveredDays.length}{" "}
+                      {selectedPersonCoveredDays.length === 1 ? "fecha" : "fechas"}.
+                    </p>
+                    <div className="flex flex-col gap-1.5">
+                      {selectedPersonCoveredDays.map((coveredDay) => (
+                        <div
+                          key={coveredDay.menuDayId}
+                          className="flex items-baseline justify-between gap-3 text-xs"
+                        >
+                          <span className="text-muted">{coveredDay.fullDateLabel}</span>
+                          <span className="truncate font-medium text-foreground">
+                            {coveredDay.menuOptionName}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ) : (
+                  <p className="text-xs leading-5 text-muted">
+                    A&uacute;n no tienes almuerzos registrados en las fechas disponibles.
+                  </p>
+                )}
+              </div>
+            ) : null}
+
             <div className="mt-8 flex justify-end">
               <button
                 type="button"
@@ -282,10 +336,29 @@ export function HomeFlow({
             </p>
 
             {!selectedPersonHasAnyAvailableDate ? (
-              <p className="mt-6 text-sm leading-6 text-muted">
-                Esta persona ya registr&oacute; elecci&oacute;n en todas las fechas
-                disponibles entre esta semana y la siguiente.
-              </p>
+              <div className="mt-6 space-y-3">
+                <p className="text-sm leading-6 text-muted">
+                  Esta persona ya registr&oacute; elecci&oacute;n en todas las fechas
+                  disponibles entre esta semana y la siguiente.
+                </p>
+                {selectedPersonCoveredDays.length > 0 ? (
+                  <div className="rounded-[18px] border border-border bg-[var(--card)] px-4 py-3 shadow-[var(--shadow-soft)]">
+                    <div className="space-y-2">
+                      {selectedPersonCoveredDays.map((coveredDay) => (
+                        <div
+                          key={coveredDay.menuDayId}
+                          className="flex items-baseline justify-between gap-3 text-xs"
+                        >
+                          <span className="text-muted">{coveredDay.fullDateLabel}</span>
+                          <span className="truncate font-medium text-foreground">
+                            {coveredDay.menuOptionName}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ) : null}
+              </div>
             ) : (
               <div className="mt-6 rounded-[20px] border border-border bg-[var(--card)] px-4 py-4 shadow-[var(--shadow-soft)]">
                 <div className="mb-2 grid grid-cols-7 gap-px text-center text-[7px] font-semibold uppercase tracking-[0.05em] text-muted sm:text-[8px]">

@@ -102,6 +102,11 @@ export default async function Home({ searchParams }: HomePageProps) {
           select: {
             personId: true,
             menuOptionId: true,
+            menuOption: {
+              select: {
+                name: true,
+              },
+            },
           },
         },
       },
@@ -237,6 +242,10 @@ export default async function Home({ searchParams }: HomePageProps) {
               fullDateLabel: formatMenuDate(menuDay.date),
               dayNumber: menuDay.date.getUTCDate(),
               selectedPersonIds: menuDay.selections.map((selection) => selection.personId),
+              selections: menuDay.selections.map((selection) => ({
+                personId: selection.personId,
+                menuOptionName: selection.menuOption.name,
+              })),
               options: menuDay.options.map((option) => ({
                 id: option.id,
                 name: option.name,

@@ -67,13 +67,13 @@ export function QrLauncher({ shareUrl }: QrLauncherProps) {
                 Escanea este QR
               </h2>
               <p className="max-w-xl text-center text-sm leading-6 text-muted">
-                Comparte este acceso directo para abrir el registro de almuerzo diario.
+                Comparte este acceso directo para abrir el registro de almuerzo.
               </p>
               <div className="w-full max-w-[420px] rounded-[2rem] bg-white p-4 shadow-[inset_0_0_0_1px_rgba(222,214,200,0.9)]">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src={qrImageUrl}
-                  alt="Código QR para abrir el registro de almuerzo diario"
+                  alt="Código QR para abrir el registro de almuerzo"
                   className="block h-auto w-full"
                 />
               </div>

@@ -1,4 +1,4 @@
-## Registro de almuerzo diario
+## Registro de almuerzo
 
 MVP en Next.js para seleccionar almuerzos diarios por persona, con administraci&oacute;n de personas, d&iacute;as de men&uacute;, opciones por d&iacute;a y reportes.
 
