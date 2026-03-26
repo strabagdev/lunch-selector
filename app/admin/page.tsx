@@ -37,30 +37,21 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
   const resolvedSearchParams = await searchParams;
   const requestedMenuDayId = getMenuDayParam(resolvedSearchParams.menuDay);
 
-  async function deleteMenuOption(formData: FormData) {
+  async function deleteSelection(formData: FormData) {
     "use server";
 
-    const optionId = String(formData.get("optionId") ?? "");
+    const selectionId = String(formData.get("selectionId") ?? "");
 
-    if (!optionId) {
+    if (!selectionId) {
       return;
     }
 
-    const selectionCount = await prisma.lunchSelection.count({
-      where: { menuOptionId: optionId },
-    });
-
-    if (selectionCount > 0) {
-      return;
-    }
-
-    await prisma.menuOption.delete({
-      where: { id: optionId },
+    await prisma.lunchSelection.delete({
+      where: { id: selectionId },
       select: { id: true },
     });
 
     revalidatePath("/admin");
-    revalidatePath("/admin/menu-config");
     revalidatePath("/");
   }
 
@@ -202,25 +193,9 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
                       </p>
                       <h4 className="text-sm font-semibold">{option.name}</h4>
                     </div>
-                    <div className="flex items-center gap-3">
-                      <span className="rounded-full bg-surface px-3 py-1 text-xs font-semibold text-muted">
-                        {selectionsByOption.get(option.id) ?? 0}
-                      </span>
-                      <form action={deleteMenuOption}>
-                        <input type="hidden" name="optionId" value={option.id} />
-                        <ConfirmSubmitButton
-                          confirmMessage="Se eliminará esta opción del menú. ¿Quieres continuar?"
-                          disabled={(selectionsByOption.get(option.id) ?? 0) > 0}
-                          className={`rounded-2xl border px-3 py-2 text-xs font-medium transition-colors ${
-                            (selectionsByOption.get(option.id) ?? 0) > 0
-                              ? "cursor-not-allowed border-border bg-surface text-muted opacity-60"
-                              : "border-[rgba(154,52,18,0.18)] bg-[rgba(154,52,18,0.06)] text-[rgb(154,52,18)] hover:bg-[rgba(154,52,18,0.1)]"
-                          }`}
-                        >
-                          Eliminar
-                        </ConfirmSubmitButton>
-                      </form>
-                    </div>
+                    <span className="rounded-full bg-surface px-3 py-1 text-xs font-semibold text-muted">
+                      {selectionsByOption.get(option.id) ?? 0}
+                    </span>
                   </div>
                 </div>
               ))}
@@ -243,10 +218,21 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
                     key={selection.id}
                     className="flex items-center justify-between gap-4 rounded-2xl border border-border bg-background px-4 py-3"
                   >
-                    <span className="text-sm font-medium">{selection.person.name}</span>
-                    <span className="text-sm text-muted">
-                      {selection.menuOption.name}
-                    </span>
+                    <div className="min-w-0">
+                      <span className="text-sm font-medium">{selection.person.name}</span>
+                      <span className="mt-1 block text-sm text-muted">
+                        {selection.menuOption.name}
+                      </span>
+                    </div>
+                    <form action={deleteSelection}>
+                      <input type="hidden" name="selectionId" value={selection.id} />
+                      <ConfirmSubmitButton
+                        confirmMessage="Se eliminará esta selección para corregirla. ¿Quieres continuar?"
+                        className="rounded-2xl border border-[rgba(154,52,18,0.18)] bg-[rgba(154,52,18,0.06)] px-3 py-2 text-xs font-medium text-[rgb(154,52,18)] transition-colors hover:bg-[rgba(154,52,18,0.1)]"
+                      >
+                        Eliminar
+                      </ConfirmSubmitButton>
+                    </form>
                   </li>
                 ))}
               </ul>
