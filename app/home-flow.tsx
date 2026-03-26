@@ -130,7 +130,7 @@ export function HomeFlow({
               />
             </div>
 
-            <div className="grid gap-2 sm:grid-cols-4">
+            <div className="grid grid-cols-4 gap-2">
               {STEPS.map((item) => {
                 const isCurrent = currentStep === item.step;
                 const hasCompletedData =
@@ -141,44 +141,44 @@ export function HomeFlow({
                 const isDone = item.step < currentStep && hasCompletedData;
 
                 return (
-                  <div
-                    key={item.step}
-                    className={`flex items-center gap-3 rounded-[18px] border px-3 py-2 ${
-                      isCurrent
-                        ? "border-[var(--accent-border)] bg-[var(--accent-soft)] shadow-[inset_0_0_0_1px_rgba(180,83,9,0.08)]"
-                        : isDone
-                          ? "border-[var(--success-border)] bg-[var(--success-soft)]"
-                          : "border-border bg-background"
-                    }`}
-                  >
-                    <span
-                      className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full border text-[11px] font-semibold ${
+                  <div key={item.step} className="min-w-0 space-y-1">
+                    <div
+                      className={`flex min-w-0 items-center justify-center gap-2 rounded-[18px] border px-2.5 py-2 sm:justify-start ${
                         isCurrent
-                          ? "border-[var(--accent-border)] bg-[rgba(180,83,9,0.18)] text-[var(--accent)]"
+                          ? "border-[var(--accent-border)] bg-[var(--accent-soft)] shadow-[inset_0_0_0_1px_rgba(180,83,9,0.08)]"
                           : isDone
-                            ? "border-[var(--success-border)] bg-[rgba(47,111,79,0.16)] text-[var(--success)]"
-                            : "border-border bg-surface text-muted"
+                            ? "border-[var(--success-border)] bg-[var(--success-soft)]"
+                            : "border-border bg-background"
                       }`}
                     >
-                      {isDone && !isCurrent ? "✓" : item.step}
-                    </span>
-
-                    <div className="min-w-0">
-                      <p
-                        className={`text-[10px] font-semibold uppercase tracking-[0.16em] ${
-                          isDone && !isCurrent ? "text-[var(--success)]" : "text-muted"
+                      <span
+                        className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full border text-[10px] font-semibold sm:h-7 sm:w-7 sm:text-[11px] ${
+                          isCurrent
+                            ? "border-[var(--accent-border)] bg-[rgba(180,83,9,0.18)] text-[var(--accent)]"
+                            : isDone
+                              ? "border-[var(--success-border)] bg-[rgba(47,111,79,0.16)] text-[var(--success)]"
+                              : "border-border bg-surface text-muted"
                         }`}
                       >
-                        Paso
-                      </p>
+                        {isDone && !isCurrent ? "✓" : item.step}
+                      </span>
+
                       <p
-                        className={`truncate text-sm font-semibold ${
+                        className={`hidden truncate text-sm font-semibold sm:block ${
                           isDone && !isCurrent ? "text-[var(--success)]" : ""
                         }`}
                       >
-                        {item.title}
+                        {item.step} {item.title}
                       </p>
                     </div>
+
+                    <p
+                      className={`px-1 text-center text-[11px] font-semibold sm:hidden ${
+                        isDone && !isCurrent ? "text-[var(--success)]" : "text-muted"
+                      }`}
+                    >
+                      {item.title}
+                    </p>
                   </div>
                 );
               })}
@@ -321,7 +321,7 @@ export function HomeFlow({
                       return (
                         <div
                           key={day.key}
-                          className="flex h-5 w-full items-center justify-center rounded-[5px] border border-transparent bg-transparent text-[9px] font-medium leading-none text-muted sm:h-6"
+                          className="flex h-7 w-full items-center justify-center rounded-[6px] border border-transparent bg-transparent text-[10px] font-medium leading-none text-[rgba(107,102,93,0.65)] sm:h-6 sm:text-[9px]"
                         >
                           {day.dayNumber}
                         </div>
@@ -339,7 +339,7 @@ export function HomeFlow({
                       return (
                         <div
                           key={day.key}
-                          className="flex h-5 w-full items-center justify-center rounded-[5px] border border-dashed border-border bg-[rgba(107,102,93,0.05)] text-[9px] font-medium leading-none text-muted sm:h-6"
+                          className="flex h-7 w-full items-center justify-center rounded-[6px] border border-dashed border-[rgba(107,102,93,0.35)] bg-[rgba(107,102,93,0.08)] text-[10px] font-semibold leading-none text-[rgba(107,102,93,0.9)] sm:h-6 sm:text-[9px]"
                           title="Ya registraste una eleccion para esta fecha"
                         >
                           {day.dayNumber}
@@ -355,16 +355,31 @@ export function HomeFlow({
                           setSelectedMenuDayId(day.menuDayId);
                           setSelectedMenuOptionId("");
                         }}
-                        className={`flex h-5 w-full items-center justify-center rounded-[5px] border text-[9px] font-semibold leading-none transition hover:bg-surface sm:h-6 ${
+                        className={`flex h-7 w-full items-center justify-center rounded-[6px] border text-[10px] font-semibold leading-none transition hover:bg-surface sm:h-6 sm:text-[9px] ${
                           isSelected
-                            ? "border-[var(--accent)] bg-[rgba(180,83,9,0.14)] text-[var(--accent)] ring-1 ring-[rgba(180,83,9,0.2)]"
-                            : "border-border bg-white text-foreground"
+                            ? "border-[var(--accent)] bg-[rgba(180,83,9,0.16)] text-[var(--accent)] ring-1 ring-[rgba(180,83,9,0.24)]"
+                            : "border-[rgba(29,29,27,0.14)] bg-white text-foreground shadow-[0_8px_16px_-16px_rgba(29,29,27,0.45)]"
                         }`}
                       >
                         {day.dayNumber}
                       </button>
                     );
                   })}
+                </div>
+
+                <div className="mt-4 flex flex-wrap gap-3 text-[11px] text-muted">
+                  <span className="inline-flex items-center gap-2">
+                    <span className="h-2.5 w-2.5 rounded-[4px] border border-[rgba(29,29,27,0.14)] bg-white" />
+                    Disponible
+                  </span>
+                  <span className="inline-flex items-center gap-2">
+                    <span className="h-2.5 w-2.5 rounded-[4px] border border-[var(--accent)] bg-[rgba(180,83,9,0.16)]" />
+                    Seleccionado
+                  </span>
+                  <span className="inline-flex items-center gap-2">
+                    <span className="h-2.5 w-2.5 rounded-[4px] border border-dashed border-[rgba(107,102,93,0.35)] bg-[rgba(107,102,93,0.08)]" />
+                    Ya usado
+                  </span>
                 </div>
               </div>
             )}
