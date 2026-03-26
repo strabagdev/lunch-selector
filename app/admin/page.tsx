@@ -172,28 +172,34 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
       </section>
 
       {!menuDay ? null : (
-        <div className="grid gap-6 lg:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)]">
+        <div className="space-y-6">
           <section className="rounded-[2rem] border border-border bg-surface p-6 sm:p-8">
-            <div className="space-y-2">
-              <h3 className="text-2xl font-semibold tracking-tight">
-                {formatMenuDate(menuDay.date)}
-              </h3>
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+              <div className="space-y-2">
+                <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-accent">
+                  Resumen
+                </p>
+                <h3 className="text-2xl font-semibold tracking-tight">
+                  {formatMenuDate(menuDay.date)}
+                </h3>
+              </div>
+              <p className="text-sm font-medium text-muted">
+                {menuDay.selections.length} selecciones totales
+              </p>
             </div>
 
-            <div className="mt-6 space-y-3">
+            <div className="mt-6 grid gap-4 lg:grid-cols-3">
               {menuDay.options.map((option, index) => (
                 <div
                   key={option.id}
-                  className="rounded-2xl border border-border bg-background px-4 py-4"
+                  className="rounded-[1.9rem] border border-border bg-background px-5 py-6 text-center"
                 >
-                  <div className="flex items-center justify-between gap-4">
-                    <div className="space-y-1">
-                      <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-muted">
-                        Menu {index + 1}
-                      </p>
-                      <h4 className="text-sm font-semibold">{option.name}</h4>
-                    </div>
-                    <span className="rounded-full bg-surface px-3 py-1 text-xs font-semibold text-muted">
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-muted">
+                    Menu {index + 1}
+                  </p>
+                  <h4 className="mt-3 text-base font-semibold leading-5">{option.name}</h4>
+                  <div className="mt-6 flex items-center justify-center">
+                    <span className="text-5xl font-semibold leading-none tracking-tight text-accent sm:text-6xl">
                       {selectionsByOption.get(option.id) ?? 0}
                     </span>
                   </div>
@@ -212,30 +218,38 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
                 A&uacute;n no hay selecciones registradas para esta fecha.
               </p>
             ) : (
-              <ul className="mt-6 space-y-3">
-                {menuDay.selections.map((selection) => (
-                  <li
-                    key={selection.id}
-                    className="flex items-center justify-between gap-4 rounded-2xl border border-border bg-background px-4 py-3"
-                  >
-                    <div className="min-w-0">
-                      <span className="text-sm font-medium">{selection.person.name}</span>
-                      <span className="mt-1 block text-sm text-muted">
+              <div className="mt-6 overflow-hidden rounded-2xl border border-border bg-background">
+                <div className="grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto] gap-3 border-b border-border px-4 py-3 text-[11px] font-semibold uppercase tracking-[0.14em] text-muted">
+                  <span>Persona</span>
+                  <span>Men&uacute;</span>
+                  <span>Acci&oacute;n</span>
+                </div>
+
+                <div className="divide-y divide-border">
+                  {menuDay.selections.map((selection) => (
+                    <div
+                      key={selection.id}
+                      className="grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto] items-center gap-3 px-4 py-3"
+                    >
+                      <span className="truncate text-sm font-medium">
+                        {selection.person.name}
+                      </span>
+                      <span className="truncate text-sm text-muted">
                         {selection.menuOption.name}
                       </span>
+                      <form action={deleteSelection}>
+                        <input type="hidden" name="selectionId" value={selection.id} />
+                        <ConfirmSubmitButton
+                          confirmMessage="Se eliminará esta selección para corregirla. ¿Quieres continuar?"
+                          className="flex h-8 w-8 items-center justify-center rounded-full border border-[rgba(154,52,18,0.18)] bg-[rgba(154,52,18,0.06)] text-sm font-semibold leading-none text-[rgb(154,52,18)] transition-colors hover:bg-[rgba(154,52,18,0.1)]"
+                        >
+                          x
+                        </ConfirmSubmitButton>
+                      </form>
                     </div>
-                    <form action={deleteSelection}>
-                      <input type="hidden" name="selectionId" value={selection.id} />
-                      <ConfirmSubmitButton
-                        confirmMessage="Se eliminará esta selección para corregirla. ¿Quieres continuar?"
-                        className="rounded-2xl border border-[rgba(154,52,18,0.18)] bg-[rgba(154,52,18,0.06)] px-3 py-2 text-xs font-medium text-[rgb(154,52,18)] transition-colors hover:bg-[rgba(154,52,18,0.1)]"
-                      >
-                        Eliminar
-                      </ConfirmSubmitButton>
-                    </form>
-                  </li>
-                ))}
-              </ul>
+                  ))}
+                </div>
+              </div>
             )}
           </section>
         </div>
