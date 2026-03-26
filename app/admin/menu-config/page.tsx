@@ -342,6 +342,9 @@ export default async function AdminMenuConfigPage({
                 <div className="space-y-2">
                   <div className="flex flex-wrap items-center gap-2">
                     <span className="rounded-full bg-background px-2.5 py-1 text-[11px] font-semibold text-muted">
+                      {menuDay.options.length} opciones
+                    </span>
+                    <span className="rounded-full bg-background px-2.5 py-1 text-[11px] font-semibold text-muted">
                       {menuDay._count.selections} selecciones
                     </span>
                   </div>
@@ -373,14 +376,14 @@ export default async function AdminMenuConfigPage({
                 </div>
               </div>
 
-              <div className="mt-6 space-y-3">
-                {menuDay.options.length === 0 ? (
-                  <div className="rounded-2xl border border-dashed border-border bg-background px-4 py-4 text-sm leading-6 text-muted">
-                    Esta fecha todav&iacute;a no tiene opciones configuradas.
-                  </div>
-                ) : (
-                  menuDay.options.map((option) =>
-                    editingMenuDayId === menuDay.id ? (
+              {editingMenuDayId === menuDay.id ? (
+                <div className="mt-6 space-y-3">
+                  {menuDay.options.length === 0 ? (
+                    <div className="rounded-2xl border border-dashed border-border bg-background px-4 py-4 text-sm leading-6 text-muted">
+                      Esta fecha todav&iacute;a no tiene opciones configuradas.
+                    </div>
+                  ) : (
+                    menuDay.options.map((option) => (
                       <div
                         key={option.id}
                         className="rounded-2xl border border-border bg-background px-4 py-4"
@@ -449,31 +452,31 @@ export default async function AdminMenuConfigPage({
                           </div>
                         </div>
                       </div>
-                    ) : (
-                      <div
+                    ))
+                  )}
+                </div>
+              ) : (
+                <div className="mt-4 flex flex-wrap gap-2">
+                  {menuDay.options.length === 0 ? (
+                    <span className="text-sm text-muted">
+                      Sin opciones configuradas
+                    </span>
+                  ) : (
+                    menuDay.options.map((option) => (
+                      <span
                         key={option.id}
-                        className="flex flex-col gap-3 rounded-2xl border border-border bg-background px-4 py-4 sm:flex-row sm:items-center sm:justify-between"
+                        className={`rounded-full px-3 py-1.5 text-xs font-medium ${
+                          option.isAvailable
+                            ? "border border-border bg-background text-foreground"
+                            : "border border-border bg-surface text-muted"
+                        }`}
                       >
-                        <div className="flex flex-wrap items-center gap-2">
-                          <span className="text-sm font-semibold">{option.name}</span>
-                          <span
-                            className={`rounded-full px-2.5 py-1 text-[11px] font-semibold ${
-                              option.isAvailable
-                                ? "bg-[rgba(27,94,32,0.08)] text-[rgb(27,94,32)]"
-                                : "bg-[rgba(107,102,93,0.1)] text-muted"
-                            }`}
-                          >
-                            {option.isAvailable ? "Disponible" : "Oculta"}
-                          </span>
-                        </div>
-                        <span className="text-xs font-semibold uppercase tracking-[0.14em] text-muted">
-                          Orden {option.sortOrder}
-                        </span>
-                      </div>
-                    ),
-                  )
-                )}
-              </div>
+                        {option.name}
+                      </span>
+                    ))
+                  )}
+                </div>
+              )}
 
               {editingMenuDayId === menuDay.id ? (
                 <div className="mt-6 rounded-[1.5rem] border border-border bg-background p-5">

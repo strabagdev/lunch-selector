@@ -7,6 +7,11 @@
   --muted: #6b665d;
   --border: #ded6c8;
   --accent: #b45309;
+  --success: #2f6f4f;
+  --success-soft: rgba(47, 111, 79, 0.12);
+  --success-border: rgba(47, 111, 79, 0.22);
+  --accent-soft: rgba(180, 83, 9, 0.12);
+  --accent-border: rgba(180, 83, 9, 0.22);
 }
 
 @theme inline {

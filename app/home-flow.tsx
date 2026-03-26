@@ -90,25 +90,29 @@ export function HomeFlow({
     <>
       <section className="rounded-[26px] border border-border bg-surface p-6 shadow-[0_24px_80px_rgba(29,29,27,0.08)] sm:p-8">
         <div className="space-y-5">
-          <div className="max-w-xl space-y-2.5">
-            <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-accent">
-              Seleccion diaria
-            </p>
-            <div className="space-y-2">
-              <h1 className="text-3xl font-semibold leading-none tracking-tight sm:text-4xl xl:text-[2.35rem]">
-                Registro de almuerzo diario
-              </h1>
-              <p className="text-sm font-medium text-accent">{todayLabel}</p>
-              <p className="text-[15px] leading-6 text-muted">
-                Avanza paso a paso para registrar tu almuerzo de forma simple.
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+            <div className="max-w-xl space-y-2.5">
+              <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-accent">
+                Seleccion diaria
               </p>
+              <div className="space-y-2">
+                <h1 className="text-3xl font-semibold leading-none tracking-tight sm:text-4xl xl:text-[2.35rem]">
+                  Registro de almuerzo diario
+                </h1>
+                <p className="text-[15px] leading-6 text-muted">
+                  Avanza paso a paso para registrar tu almuerzo de forma simple.
+                </p>
+              </div>
             </div>
+            <p className="text-sm font-medium text-accent sm:pt-1 sm:text-right">
+              {todayLabel}
+            </p>
           </div>
 
           <div className="space-y-3">
             <div className="h-1.5 overflow-hidden rounded-full bg-[rgba(107,102,93,0.12)]">
               <div
-                className="h-full rounded-full bg-[linear-gradient(90deg,rgba(180,83,9,0.88),rgba(217,119,6,0.74))] transition-[width] duration-300"
+                className="h-full rounded-full bg-[linear-gradient(90deg,var(--success),rgba(88,153,113,0.85))] transition-[width] duration-300"
                 style={{
                   width: `${Math.max(
                     0,
@@ -121,39 +125,51 @@ export function HomeFlow({
             <div className="grid gap-2 sm:grid-cols-4">
               {STEPS.map((item) => {
                 const isCurrent = currentStep === item.step;
-                const isDone =
+                const hasCompletedData =
                   (item.step === 1 && canAdvanceFromStep1) ||
                   (item.step === 2 && canAdvanceFromStep2) ||
-                  (item.step === 3 && canAdvanceFromStep3);
+                  (item.step === 3 && canAdvanceFromStep3) ||
+                  (item.step === 4 && currentStep === 5);
+                const isDone = item.step < currentStep && hasCompletedData;
 
                 return (
                   <div
                     key={item.step}
                     className={`flex items-center gap-3 rounded-[18px] border px-3 py-2 ${
                       isCurrent
-                        ? "border-[var(--accent)] bg-[rgba(180,83,9,0.1)]"
+                        ? "border-[var(--accent-border)] bg-[var(--accent-soft)] shadow-[inset_0_0_0_1px_rgba(180,83,9,0.08)]"
                         : isDone
-                          ? "border-[rgba(180,83,9,0.16)] bg-[rgba(180,83,9,0.05)]"
+                          ? "border-[var(--success-border)] bg-[var(--success-soft)]"
                           : "border-border bg-background"
                     }`}
                   >
                     <span
                       className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full border text-[11px] font-semibold ${
                         isCurrent
-                          ? "border-[var(--accent)] bg-[rgba(180,83,9,0.14)] text-[var(--accent)]"
+                          ? "border-[var(--accent-border)] bg-[rgba(180,83,9,0.18)] text-[var(--accent)]"
                           : isDone
-                            ? "border-[rgba(180,83,9,0.22)] bg-[rgba(180,83,9,0.08)] text-[var(--accent)]"
+                            ? "border-[var(--success-border)] bg-[rgba(47,111,79,0.16)] text-[var(--success)]"
                             : "border-border bg-surface text-muted"
                       }`}
                     >
-                      {item.step}
+                      {isDone && !isCurrent ? "✓" : item.step}
                     </span>
 
                     <div className="min-w-0">
-                      <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-muted">
+                      <p
+                        className={`text-[10px] font-semibold uppercase tracking-[0.16em] ${
+                          isDone && !isCurrent ? "text-[var(--success)]" : "text-muted"
+                        }`}
+                      >
                         Paso
                       </p>
-                      <p className="truncate text-sm font-semibold">{item.title}</p>
+                      <p
+                        className={`truncate text-sm font-semibold ${
+                          isDone && !isCurrent ? "text-[var(--success)]" : ""
+                        }`}
+                      >
+                        {item.title}
+                      </p>
                     </div>
                   </div>
                 );

@@ -1,5 +1,7 @@
 import Link from "next/link";
+import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
+import ConfirmSubmitButton from "@/app/admin/confirm-submit-button";
 
 export const dynamic = "force-dynamic";
 
@@ -34,6 +36,33 @@ function formatShortMenuDate(date: Date) {
 export default async function AdminPage({ searchParams }: AdminPageProps) {
   const resolvedSearchParams = await searchParams;
   const requestedMenuDayId = getMenuDayParam(resolvedSearchParams.menuDay);
+
+  async function deleteMenuOption(formData: FormData) {
+    "use server";
+
+    const optionId = String(formData.get("optionId") ?? "");
+
+    if (!optionId) {
+      return;
+    }
+
+    const selectionCount = await prisma.lunchSelection.count({
+      where: { menuOptionId: optionId },
+    });
+
+    if (selectionCount > 0) {
+      return;
+    }
+
+    await prisma.menuOption.delete({
+      where: { id: optionId },
+      select: { id: true },
+    });
+
+    revalidatePath("/admin");
+    revalidatePath("/admin/menu-config");
+    revalidatePath("/");
+  }
 
   const menuDays = await prisma.menuDay.findMany({
     where: {
@@ -173,9 +202,25 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
                       </p>
                       <h4 className="text-sm font-semibold">{option.name}</h4>
                     </div>
-                    <span className="rounded-full bg-surface px-3 py-1 text-xs font-semibold text-muted">
-                      {selectionsByOption.get(option.id) ?? 0}
-                    </span>
+                    <div className="flex items-center gap-3">
+                      <span className="rounded-full bg-surface px-3 py-1 text-xs font-semibold text-muted">
+                        {selectionsByOption.get(option.id) ?? 0}
+                      </span>
+                      <form action={deleteMenuOption}>
+                        <input type="hidden" name="optionId" value={option.id} />
+                        <ConfirmSubmitButton
+                          confirmMessage="Se eliminará esta opción del menú. ¿Quieres continuar?"
+                          disabled={(selectionsByOption.get(option.id) ?? 0) > 0}
+                          className={`rounded-2xl border px-3 py-2 text-xs font-medium transition-colors ${
+                            (selectionsByOption.get(option.id) ?? 0) > 0
+                              ? "cursor-not-allowed border-border bg-surface text-muted opacity-60"
+                              : "border-[rgba(154,52,18,0.18)] bg-[rgba(154,52,18,0.06)] text-[rgb(154,52,18)] hover:bg-[rgba(154,52,18,0.1)]"
+                          }`}
+                        >
+                          Eliminar
+                        </ConfirmSubmitButton>
+                      </form>
+                    </div>
                   </div>
                 </div>
               ))}
