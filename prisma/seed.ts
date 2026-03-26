@@ -16,21 +16,17 @@ const people = ["Danny", "Fran", "Camila", "Javier"];
 const menuTemplates = [
   {
     dayOffset: 0,
-    label: "Menu del dia",
     options: [
       {
         name: "Pollo al horno con arroz",
-        description: "Porcion clasica con ensalada verde.",
         sortOrder: 1,
       },
       {
         name: "Ensalada cesar con pollo",
-        description: "Ligera y rapida para almuerzo de oficina.",
         sortOrder: 2,
       },
       {
         name: "Pasta vegetariana",
-        description: "Con salsa de tomates asados y verduras.",
         sortOrder: 3,
       },
     ],
@@ -41,21 +37,17 @@ const menuTemplates = [
   },
   {
     dayOffset: 1,
-    label: "Menu de manana",
     options: [
       {
         name: "Carne al jugo con pure",
-        description: "Plato casero con salsa y pure de papas.",
         sortOrder: 1,
       },
       {
         name: "Wrap de pollo grillado",
-        description: "Con vegetales frescos y aderezo suave.",
         sortOrder: 2,
       },
       {
         name: "Lasaña de verduras",
-        description: "Horneada con salsa pomodoro y queso.",
         sortOrder: 3,
       },
     ],
@@ -65,21 +57,17 @@ const menuTemplates = [
   },
   {
     dayOffset: 2,
-    label: "Menu de pasado manana",
     options: [
       {
         name: "Pescado apanado con papas cocidas",
-        description: "Con limon y ensalada chilena.",
         sortOrder: 1,
       },
       {
         name: "Bowl mediterraneo",
-        description: "Con cous cous, garbanzos y vegetales.",
         sortOrder: 2,
       },
       {
         name: "Ñoquis con salsa de albahaca",
-        description: "Pasta suave con salsa cremosa y queso.",
         sortOrder: 3,
       },
     ],
@@ -130,14 +118,9 @@ async function main() {
 
     const menuDay = await prisma.menuDay.upsert({
       where: { date: menuDate },
-      update: {
-        label: template.label,
-        isOpen: true,
-      },
+      update: {},
       create: {
         date: menuDate,
-        label: template.label,
-        isOpen: true,
       },
     });
 
@@ -150,14 +133,12 @@ async function main() {
           },
         },
         update: {
-          description: option.description,
           sortOrder: option.sortOrder,
           isAvailable: true,
         },
         create: {
           menuDayId: menuDay.id,
           name: option.name,
-          description: option.description,
           sortOrder: option.sortOrder,
           isAvailable: true,
         },

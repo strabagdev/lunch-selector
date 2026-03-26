@@ -1,0 +1,3 @@
+ALTER TABLE "MenuDay"
+DROP COLUMN "label",
+DROP COLUMN "isOpen";

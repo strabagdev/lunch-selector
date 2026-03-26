@@ -3,8 +3,8 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: {
-    default: "Almuerzos Nogales",
-    template: "%s | Almuerzos Nogales",
+    default: "Registro de almuerzo diario",
+    template: "%s | Registro de almuerzo diario",
   },
   description: "MVP para seleccionar almuerzos diarios por persona.",
 };

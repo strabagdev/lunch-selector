@@ -22,8 +22,6 @@ model Person {
 model MenuDay {
   id         String           @id @default(cuid())
   date       DateTime         @db.Date
-  label      String?
-  isOpen     Boolean          @default(true)
   createdAt  DateTime         @default(now())
   updatedAt  DateTime         @updatedAt
   options    MenuOption[]
@@ -36,7 +34,6 @@ model MenuOption {
   id          String           @id @default(cuid())
   menuDayId   String
   name        String
-  description String?
   sortOrder   Int              @default(0)
   isAvailable Boolean          @default(true)
   createdAt   DateTime         @default(now())
