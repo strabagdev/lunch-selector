@@ -27,13 +27,21 @@ type HomeFlowProps = {
   todayLabel: string;
   menuDays: MenuDayItem[];
   calendarWeekdays: string[];
-  calendarDays: Array<{
-    dateKey: string;
-    dayNumber: number;
-    isPast: boolean;
-    menuDayId: string | null;
-    hasOptions: boolean;
-  }>;
+  calendarDays: Array<
+    | {
+        kind: "empty";
+        key: string;
+      }
+    | {
+        kind: "day";
+        key: string;
+        dateKey: string;
+        dayNumber: number;
+        isPast: boolean;
+        menuDayId: string | null;
+        hasOptions: boolean;
+      }
+  >;
   initialMenuDayId: string | null;
   initialSuccess: boolean;
   submitSelection: (formData: FormData) => void | Promise<void>;
@@ -301,14 +309,18 @@ export function HomeFlow({
 
                 <div className="grid grid-cols-7 gap-px">
                   {calendarDays.map((day) => {
+                    if (day.kind === "empty") {
+                      return <div key={day.key} className="h-5 sm:h-6" />;
+                    }
+
                     if (day.isPast) {
-                      return null;
+                      return <div key={day.key} className="h-5 sm:h-6" />;
                     }
 
                     if (!day.menuDayId || !day.hasOptions) {
                       return (
                         <div
-                          key={day.dateKey}
+                          key={day.key}
                           className="flex h-5 w-full items-center justify-center rounded-[5px] border border-transparent bg-transparent text-[9px] font-medium leading-none text-muted sm:h-6"
                         >
                           {day.dayNumber}
@@ -326,7 +338,7 @@ export function HomeFlow({
                     if (alreadySelected) {
                       return (
                         <div
-                          key={day.dateKey}
+                          key={day.key}
                           className="flex h-5 w-full items-center justify-center rounded-[5px] border border-dashed border-border bg-[rgba(107,102,93,0.05)] text-[9px] font-medium leading-none text-muted sm:h-6"
                           title="Ya registraste una eleccion para esta fecha"
                         >
@@ -337,7 +349,7 @@ export function HomeFlow({
 
                     return (
                       <button
-                        key={day.dateKey}
+                        key={day.key}
                         type="button"
                         onClick={() => {
                           setSelectedMenuDayId(day.menuDayId);

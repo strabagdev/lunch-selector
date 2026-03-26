@@ -2,6 +2,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { HomeFlow } from "./home-flow";
+import { QrLauncher } from "./qr-launcher";
 
 export const dynamic = "force-dynamic";
 
@@ -44,6 +45,8 @@ function getMonthKey(date: Date) {
 }
 
 export default async function Home({ searchParams }: HomePageProps) {
+  const shareUrl =
+    process.env.NEXT_PUBLIC_APP_URL ?? "https://lunch-selector-production.up.railway.app/";
   const resolvedSearchParams = await searchParams;
   const requestedMenuDayId = getMenuDayParam(resolvedSearchParams.menuDay);
   const successParam = getMenuDayParam(resolvedSearchParams.success);
@@ -114,31 +117,45 @@ export default async function Home({ searchParams }: HomePageProps) {
     ),
   ).getUTCDate();
   const calendarWeekdays = ["Lun", "Mar", "Mie", "Jue", "Vie", "Sab", "Dom"];
+  const firstDayWeekIndex =
+    (new Date(
+      Date.UTC(monthStart.getUTCFullYear(), monthStart.getUTCMonth(), 1),
+    ).getUTCDay() +
+      6) %
+    7;
   const menuDayByDateKey = new Map(
     selectableMenuDays.map((availableMenuDay) => [
       getDateKey(availableMenuDay.date),
       availableMenuDay,
     ]),
   );
-  const calendarDays = Array.from({ length: daysInSelectedMonth }, (_, index) => {
-    const date = new Date(
-      Date.UTC(
-        monthStart.getUTCFullYear(),
-        monthStart.getUTCMonth(),
-        index + 1,
-      ),
-    );
-    const dateKey = getDateKey(date);
-    const availableMenuDay = menuDayByDateKey.get(dateKey);
+  const calendarDays = [
+    ...Array.from({ length: firstDayWeekIndex }, (_, index) => ({
+      kind: "empty" as const,
+      key: `empty-${index}`,
+    })),
+    ...Array.from({ length: daysInSelectedMonth }, (_, index) => {
+      const date = new Date(
+        Date.UTC(
+          monthStart.getUTCFullYear(),
+          monthStart.getUTCMonth(),
+          index + 1,
+        ),
+      );
+      const dateKey = getDateKey(date);
+      const availableMenuDay = menuDayByDateKey.get(dateKey);
 
-    return {
-      dateKey,
-      dayNumber: index + 1,
-      isPast: dateKey < todayKey,
-      menuDayId: availableMenuDay?.id ?? null,
-      hasOptions: availableMenuDay ? availableMenuDay.options.length > 0 : false,
-    };
-  });
+      return {
+        kind: "day" as const,
+        key: dateKey,
+        dateKey,
+        dayNumber: index + 1,
+        isPast: dateKey < todayKey,
+        menuDayId: availableMenuDay?.id ?? null,
+        hasOptions: availableMenuDay ? availableMenuDay.options.length > 0 : false,
+      };
+    }),
+  ];
 
   async function submitSelection(formData: FormData) {
     "use server";
@@ -205,41 +222,44 @@ export default async function Home({ searchParams }: HomePageProps) {
   }
 
   return (
-    <main className="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-8 px-6 py-10 sm:px-10">
-      <HomeFlow
-        people={people}
-        todayLabel={todayLabel}
-        menuDays={selectableMenuDays.map((menuDay) => {
-          const selectionCountByOption = new Map(
-            menuDay.options.map((option) => [option.id, 0]),
-          );
-
-          for (const selection of menuDay.selections) {
-            selectionCountByOption.set(
-              selection.menuOptionId,
-              (selectionCountByOption.get(selection.menuOptionId) ?? 0) + 1,
+    <>
+      <QrLauncher shareUrl={shareUrl} />
+      <main className="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-8 px-6 py-10 sm:px-10">
+        <HomeFlow
+          people={people}
+          todayLabel={todayLabel}
+          menuDays={selectableMenuDays.map((menuDay) => {
+            const selectionCountByOption = new Map(
+              menuDay.options.map((option) => [option.id, 0]),
             );
-          }
 
-          return {
-            id: menuDay.id,
-            dateKey: getDateKey(menuDay.date),
-            fullDateLabel: formatMenuDate(menuDay.date),
-            dayNumber: menuDay.date.getUTCDate(),
-            selectedPersonIds: menuDay.selections.map((selection) => selection.personId),
-            options: menuDay.options.map((option) => ({
-              id: option.id,
-              name: option.name,
-              selectionCount: selectionCountByOption.get(option.id) ?? 0,
-            })),
-          };
-        })}
-        calendarWeekdays={calendarWeekdays}
-        calendarDays={calendarDays}
-        initialMenuDayId={initialMenuDayId}
-        initialSuccess={successParam === "1"}
-        submitSelection={submitSelection}
-      />
-    </main>
+            for (const selection of menuDay.selections) {
+              selectionCountByOption.set(
+                selection.menuOptionId,
+                (selectionCountByOption.get(selection.menuOptionId) ?? 0) + 1,
+              );
+            }
+
+            return {
+              id: menuDay.id,
+              dateKey: getDateKey(menuDay.date),
+              fullDateLabel: formatMenuDate(menuDay.date),
+              dayNumber: menuDay.date.getUTCDate(),
+              selectedPersonIds: menuDay.selections.map((selection) => selection.personId),
+              options: menuDay.options.map((option) => ({
+                id: option.id,
+                name: option.name,
+                selectionCount: selectionCountByOption.get(option.id) ?? 0,
+              })),
+            };
+          })}
+          calendarWeekdays={calendarWeekdays}
+          calendarDays={calendarDays}
+          initialMenuDayId={initialMenuDayId}
+          initialSuccess={successParam === "1"}
+          submitSelection={submitSelection}
+        />
+      </main>
+    </>
   );
 }

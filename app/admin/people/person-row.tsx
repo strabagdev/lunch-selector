@@ -22,52 +22,45 @@ export function PersonRow({
   const isDirty = normalizedDraft !== personName;
 
   return (
-    <div className="flex flex-col gap-4 rounded-2xl border border-border bg-background px-4 py-4 sm:flex-row sm:items-center sm:justify-between">
+    <div className="grid grid-cols-[minmax(0,1fr)_auto] gap-3 px-4 py-3">
       <form
         action={async (formData) => {
           await updateAction(formData);
           setIsEditing(false);
         }}
-        className="flex flex-1 flex-col gap-4 sm:flex-row sm:items-center"
+        className="contents"
       >
         <input type="hidden" name="personId" value={personId} />
-        <div className="flex-1 space-y-2">
-          <div className="flex flex-wrap items-center gap-2">
-            <span
-              className={`rounded-full px-2.5 py-1 text-[11px] font-semibold ${
-                isEditing
-                  ? "bg-[rgba(180,83,9,0.1)] text-[var(--accent)]"
-                  : "bg-[rgba(27,94,32,0.08)] text-[rgb(27,94,32)]"
-              }`}
-            >
-              {isEditing ? "Editando" : "Guardado"}
+        <label className="block">
+          {isEditing ? (
+            <span className="mb-2 inline-flex rounded-full bg-[rgba(180,83,9,0.1)] px-2.5 py-1 text-[11px] font-semibold text-[var(--accent)]">
+              Editando
             </span>
-          </div>
-
-          <label className="block">
+          ) : null}
+          <div className="flex min-h-[44px] items-center">
             <span className="sr-only">Nombre</span>
-            <input
-              type="text"
-              name="name"
-              required
-              value={draftName}
-              onChange={(event) => {
-                setDraftName(event.target.value);
-                if (!isEditing) {
-                  setIsEditing(true);
-                }
-              }}
-              onFocus={() => setIsEditing(true)}
-              className={`w-full rounded-2xl border px-4 py-3 text-sm font-medium outline-none transition-colors ${
-                isEditing
-                  ? "border-accent bg-white"
-                  : "border-border bg-surface"
-              }`}
-            />
-          </label>
-        </div>
+            {isEditing ? (
+              <input
+                type="text"
+                name="name"
+                required
+                value={draftName}
+                onChange={(event) => {
+                  setDraftName(event.target.value);
+                  if (!isEditing) {
+                    setIsEditing(true);
+                  }
+                }}
+                onFocus={() => setIsEditing(true)}
+                className="w-full rounded-2xl border border-accent bg-white px-4 py-3 text-sm font-medium outline-none transition-colors"
+              />
+            ) : (
+              <span className="text-sm font-medium">{personName}</span>
+            )}
+          </div>
+        </label>
 
-        <div className="flex flex-wrap gap-3 sm:flex-none">
+        <div className="flex flex-wrap items-center justify-end gap-3">
           {isEditing ? (
             <>
               <button
@@ -101,7 +94,7 @@ export function PersonRow({
       </form>
 
       {isEditing ? (
-        <form action={deleteAction}>
+        <form action={deleteAction} className="col-span-2 flex justify-end">
           <input type="hidden" name="personId" value={personId} />
           <button
             type="submit"
