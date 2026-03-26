@@ -141,7 +141,7 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
             A&uacute;n no hay d&iacute;as de men&uacute; con opciones cargadas.
           </div>
         ) : (
-          <div className="flex flex-wrap gap-3">
+          <div className="flex flex-wrap gap-2.5">
             {menuDays.map((availableMenuDay) => {
               const isSelected = availableMenuDay.id === menuDay?.id;
 
@@ -149,16 +149,16 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
                 <Link
                   key={availableMenuDay.id}
                   href={`/admin?menuDay=${availableMenuDay.id}`}
-                  className={`min-w-[92px] rounded-[1.5rem] border px-4 py-3 text-sm transition-colors ${
+                  className={`min-w-[76px] rounded-[1.2rem] border px-3 py-2 text-sm transition-colors ${
                     isSelected
                       ? "border-[var(--accent)] bg-[rgba(180,83,9,0.12)] text-[var(--accent)] shadow-[inset_0_0_0_1px_rgba(180,83,9,0.14)]"
                       : "border-border bg-background text-foreground hover:bg-surface"
                   }`}
                 >
-                  <span className="block text-[10px] font-semibold uppercase tracking-[0.16em] text-muted">
+                  <span className="block text-[9px] font-semibold uppercase tracking-[0.14em] text-muted">
                     {formatShortMenuDate(availableMenuDay.date)}
                   </span>
-                  <span className="mt-2 block text-lg font-semibold tracking-tight">
+                  <span className="mt-1.5 block text-base font-semibold tracking-tight">
                     {new Intl.DateTimeFormat("es-CL", {
                       timeZone: "UTC",
                       day: "2-digit",
