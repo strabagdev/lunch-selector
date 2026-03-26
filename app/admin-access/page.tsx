@@ -85,7 +85,7 @@ export default async function AdminAccessPage({
           </label>
 
           {errorParam === "1" ? (
-            <p className="text-sm text-[rgb(154,52,18)]">La clave no coincide.</p>
+            <p className="text-sm text-[var(--danger)]">La clave no coincide.</p>
           ) : null}
 
           <button

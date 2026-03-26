@@ -135,7 +135,7 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
 
   return (
     <div className="space-y-6">
-      <section className="rounded-[2rem] border border-border bg-surface p-6 sm:p-8">
+      <section className="rounded-[26px] border border-border bg-[linear-gradient(180deg,rgba(255,255,255,0.96),rgba(245,249,248,0.92))] p-6 shadow-[var(--shadow-card)] sm:p-8">
         {menuDays.length === 0 ? (
           <div className="rounded-3xl border border-dashed border-border bg-background px-5 py-4 text-sm leading-6 text-muted">
             A&uacute;n no hay d&iacute;as de men&uacute; con opciones cargadas.
@@ -149,10 +149,10 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
                 <Link
                   key={availableMenuDay.id}
                   href={`/admin?menuDay=${availableMenuDay.id}`}
-                  className={`min-w-[76px] rounded-[1.2rem] border px-3 py-2 text-sm transition-colors ${
+                  className={`min-w-[76px] rounded-[16px] border px-3 py-2 text-sm transition-colors ${
                     isSelected
-                      ? "border-[var(--accent)] bg-[rgba(180,83,9,0.12)] text-[var(--accent)] shadow-[inset_0_0_0_1px_rgba(180,83,9,0.14)]"
-                      : "border-border bg-background text-foreground hover:bg-surface"
+                      ? "border-[var(--accent-border)] bg-[var(--accent-soft)] text-[var(--accent)] shadow-[0_0_0_1px_var(--accent-border)]"
+                      : "border-border bg-[var(--card)] text-foreground hover:bg-[var(--surface-strong)]"
                   }`}
                 >
                   <span className="block text-[9px] font-semibold uppercase tracking-[0.14em] text-muted">
@@ -173,7 +173,7 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
 
       {!menuDay ? null : (
         <div className="space-y-6">
-          <section className="rounded-[2rem] border border-border bg-surface p-6 sm:p-8">
+          <section className="rounded-[26px] border border-border bg-[linear-gradient(180deg,rgba(255,255,255,0.96),rgba(245,249,248,0.92))] p-6 shadow-[var(--shadow-card)] sm:p-8">
             <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
               <div className="space-y-2">
                 <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-accent">
@@ -188,27 +188,29 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
               </p>
             </div>
 
-            <div className="mt-6 grid gap-4 lg:grid-cols-3">
+            <div className="mt-6 grid grid-cols-3 gap-2 sm:gap-4">
               {menuDay.options.map((option, index) => (
                 <div
                   key={option.id}
-                  className="rounded-[1.9rem] border border-border bg-background px-5 py-6 text-center"
+                  className="rounded-[20px] border border-border bg-[var(--card)] px-3 py-4 text-center shadow-[var(--shadow-soft)] sm:px-5 sm:py-6"
                 >
-                  <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-muted">
-                    Menu {index + 1}
-                  </p>
-                  <h4 className="mt-3 text-base font-semibold leading-5">{option.name}</h4>
-                  <div className="mt-6 flex items-center justify-center">
-                    <span className="text-5xl font-semibold leading-none tracking-tight text-accent sm:text-6xl">
+                  <div className="flex items-center justify-center">
+                    <span className="text-3xl font-semibold leading-none tracking-tight text-accent sm:text-6xl">
                       {selectionsByOption.get(option.id) ?? 0}
                     </span>
                   </div>
+                  <p className="mt-3 text-[9px] font-semibold uppercase tracking-[0.12em] text-muted sm:text-[11px] sm:tracking-[0.16em]">
+                    Menu {index + 1}
+                  </p>
+                  <h4 className="mt-2 text-xs font-semibold leading-4 sm:mt-3 sm:text-base sm:leading-5">
+                    {option.name}
+                  </h4>
                 </div>
               ))}
             </div>
           </section>
 
-          <section className="rounded-[2rem] border border-border bg-surface p-6 sm:p-8">
+          <section className="rounded-[26px] border border-border bg-[linear-gradient(180deg,rgba(255,255,255,0.96),rgba(245,249,248,0.92))] p-6 shadow-[var(--shadow-card)] sm:p-8">
             <h3 className="text-xl font-semibold tracking-tight">
               Personas que ya eligieron
             </h3>
@@ -218,7 +220,7 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
                 A&uacute;n no hay selecciones registradas para esta fecha.
               </p>
             ) : (
-              <div className="mt-6 overflow-hidden rounded-2xl border border-border bg-background">
+              <div className="mt-6 overflow-hidden rounded-[20px] border border-border bg-[var(--card)] shadow-[var(--shadow-soft)]">
                 <div className="grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto] gap-3 border-b border-border px-4 py-3 text-[11px] font-semibold uppercase tracking-[0.14em] text-muted">
                   <span>Persona</span>
                   <span>Men&uacute;</span>
@@ -241,9 +243,15 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
                         <input type="hidden" name="selectionId" value={selection.id} />
                         <ConfirmSubmitButton
                           confirmMessage="Se eliminará esta selección para corregirla. ¿Quieres continuar?"
-                          className="flex h-8 w-8 items-center justify-center rounded-full border border-[rgba(154,52,18,0.18)] bg-[rgba(154,52,18,0.06)] text-sm font-semibold leading-none text-[rgb(154,52,18)] transition-colors hover:bg-[rgba(154,52,18,0.1)]"
+                          className="group inline-flex h-9 w-9 items-center justify-center rounded-[14px] border border-[var(--danger-border)] bg-[linear-gradient(180deg,rgba(255,255,255,1),rgba(255,239,243,0.98))] text-[var(--danger)] shadow-[inset_0_1px_0_rgba(255,255,255,0.9),0_12px_24px_-18px_rgba(220,63,97,0.55)] ring-1 ring-[rgba(255,255,255,0.7)] transition hover:-translate-y-0.5 hover:border-[rgba(220,63,97,0.28)] hover:bg-[linear-gradient(180deg,rgba(255,250,251,1),rgba(255,232,238,1))] hover:shadow-[inset_0_1px_0_rgba(255,255,255,0.92),0_16px_28px_-18px_rgba(220,63,97,0.52)]"
                         >
-                          x
+                          <span className="sr-only">Eliminar selección</span>
+                          <span
+                            aria-hidden="true"
+                            className="flex h-5 w-5 items-center justify-center rounded-full bg-[rgba(220,63,97,0.1)] text-[15px] font-bold leading-none transition group-hover:bg-[rgba(220,63,97,0.16)]"
+                          >
+                            ×
+                          </span>
                         </ConfirmSubmitButton>
                       </form>
                     </div>

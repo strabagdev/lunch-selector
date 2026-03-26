@@ -8,7 +8,6 @@ const adminLinks = [
   { href: "/admin/people", label: "Personas" },
   { href: "/admin/menu-config", label: "Menú" },
   { href: "/admin/menu-days", label: "Histórico" },
-  { href: "/admin/reports", label: "Reportes" },
 ];
 
 export default function AdminNav() {
@@ -25,7 +24,7 @@ export default function AdminNav() {
             href={link.href}
             className={`rounded-full border px-4 py-2 text-sm font-medium transition-colors ${
               isActive
-                ? "border-[var(--accent)] bg-[rgba(180,83,9,0.12)] text-[var(--accent)]"
+                ? "border-[var(--accent-border)] bg-[var(--accent-soft)] text-[var(--accent)]"
                 : "border-border bg-background text-foreground hover:bg-surface"
             }`}
           >

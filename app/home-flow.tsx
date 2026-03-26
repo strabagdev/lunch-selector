@@ -109,7 +109,7 @@ export function HomeFlow({
 
   return (
     <>
-      <section className="rounded-[26px] border border-border bg-surface p-6 shadow-[0_24px_80px_rgba(29,29,27,0.08)] sm:p-8">
+      <section className="rounded-[26px] border border-border bg-[radial-gradient(circle_at_top_left,rgba(15,118,110,0.12),transparent_28%),linear-gradient(180deg,rgba(255,255,255,0.96),rgba(245,249,248,0.92))] p-6 shadow-[var(--shadow-card)] sm:p-8">
         <div className="space-y-4">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
             <div className="max-w-xl space-y-2.5">
@@ -140,9 +140,9 @@ export function HomeFlow({
               </p>
             </div>
 
-            <div className="h-1.5 overflow-hidden rounded-full bg-[rgba(107,102,93,0.12)]">
+            <div className="h-1.5 overflow-hidden rounded-full bg-[rgba(17,32,28,0.08)]">
               <div
-                className="h-full rounded-full bg-[linear-gradient(90deg,var(--success),rgba(88,153,113,0.85))] transition-[width] duration-300"
+                className="h-full rounded-full bg-[linear-gradient(90deg,var(--accent),var(--success))] transition-[width] duration-300"
                 style={{
                   width: `${Math.max(
                     0,
@@ -163,7 +163,7 @@ export function HomeFlow({
         ) : null}
 
         {currentStep === 5 ? (
-          <section className="rounded-[2rem] border border-border bg-surface p-6 sm:p-8">
+          <section className="rounded-[26px] border border-border bg-[linear-gradient(180deg,rgba(255,255,255,0.96),rgba(245,249,248,0.92))] p-6 shadow-[var(--shadow-card)] sm:p-8">
             <h2 className="text-2xl font-semibold tracking-tight">
               Almuerzo confirmado.
             </h2>
@@ -180,7 +180,7 @@ export function HomeFlow({
                     setSelectedMenuOptionId("");
                     setCurrentStep(2);
                   }}
-                  className="rounded-2xl bg-foreground px-5 py-3 text-sm font-medium text-background transition-opacity"
+                  className="rounded-[16px] bg-[linear-gradient(180deg,var(--accent),#0a5a54)] px-5 py-3 text-sm font-medium text-white shadow-[0_14px_26px_-16px_rgba(15,23,42,0.28)] transition hover:brightness-105"
                 >
                   Seleccionar otra fecha
                 </button>
@@ -199,7 +199,7 @@ export function HomeFlow({
                   setSelectedMenuOptionId("");
                   setCurrentStep(1);
                 }}
-                className="rounded-2xl border border-border bg-background px-5 py-3 text-sm font-medium transition-colors hover:bg-surface"
+                className="rounded-[16px] border border-[color:var(--border-strong)] bg-[var(--card)] px-5 py-3 text-sm font-medium transition-colors hover:bg-[var(--surface-strong)]"
               >
                 Cambiar persona
               </button>
@@ -208,7 +208,7 @@ export function HomeFlow({
         ) : null}
 
         {currentStep === 1 ? (
-          <section className="rounded-[2rem] border border-border bg-surface p-6 sm:p-8">
+          <section className="rounded-[26px] border border-border bg-[linear-gradient(180deg,rgba(255,255,255,0.96),rgba(245,249,248,0.92))] p-6 shadow-[var(--shadow-card)] sm:p-8">
             <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-accent">
               Paso 1
             </p>
@@ -242,7 +242,7 @@ export function HomeFlow({
                     setSelectedMenuDayId(nextMenuDayId);
                     setSelectedMenuOptionId("");
                   }}
-                  className="w-full rounded-2xl border border-border bg-background px-4 py-3 text-sm outline-none transition-colors focus:border-accent"
+                  className="w-full rounded-[16px] border border-[color:var(--input)] bg-[var(--card)] px-4 py-3 text-sm shadow-[inset_0_1px_0_rgba(255,255,255,0.7)] outline-none transition-colors focus:border-accent"
                 >
                   <option value="" disabled>
                     Selecciona tu nombre
@@ -261,7 +261,7 @@ export function HomeFlow({
                 type="button"
                 disabled={!canAdvanceFromStep1}
                 onClick={() => setCurrentStep(2)}
-                className="rounded-2xl bg-foreground px-5 py-3 text-sm font-medium text-background transition-opacity disabled:cursor-not-allowed disabled:opacity-50"
+                className="rounded-[16px] bg-[linear-gradient(180deg,var(--accent),#0a5a54)] px-5 py-3 text-sm font-medium text-white shadow-[0_14px_26px_-16px_rgba(15,23,42,0.28)] transition hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 Continuar
               </button>
@@ -270,7 +270,7 @@ export function HomeFlow({
         ) : null}
 
         {currentStep === 2 ? (
-          <section className="rounded-[2rem] border border-border bg-surface p-6 sm:p-8">
+          <section className="rounded-[26px] border border-border bg-[linear-gradient(180deg,rgba(255,255,255,0.96),rgba(245,249,248,0.92))] p-6 shadow-[var(--shadow-card)] sm:p-8">
             <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-accent">
               Paso 2
             </p>
@@ -287,7 +287,7 @@ export function HomeFlow({
                 disponibles entre esta semana y la siguiente.
               </p>
             ) : (
-              <div className="mt-6 rounded-[18px] border border-border bg-background px-4 py-4">
+              <div className="mt-6 rounded-[20px] border border-border bg-[var(--card)] px-4 py-4 shadow-[var(--shadow-soft)]">
                 <div className="mb-2 grid grid-cols-7 gap-px text-center text-[7px] font-semibold uppercase tracking-[0.05em] text-muted sm:text-[8px]">
                   {calendarWeekdays.map((weekday) => (
                     <div key={weekday}>{weekday}</div>
@@ -308,7 +308,7 @@ export function HomeFlow({
                       return (
                         <div
                           key={day.key}
-                          className="flex h-7 w-full items-center justify-center rounded-[6px] border border-transparent bg-transparent text-[10px] font-medium leading-none text-[rgba(107,102,93,0.65)] sm:h-6 sm:text-[9px]"
+                          className="flex h-7 w-full items-center justify-center rounded-[6px] border border-transparent bg-transparent text-[10px] font-medium leading-none text-muted sm:h-6 sm:text-[9px]"
                         >
                           {day.dayNumber}
                         </div>
@@ -326,7 +326,7 @@ export function HomeFlow({
                       return (
                         <div
                           key={day.key}
-                          className="flex h-7 w-full items-center justify-center rounded-[6px] border border-dashed border-[rgba(107,102,93,0.35)] bg-[rgba(107,102,93,0.08)] text-[10px] font-semibold leading-none text-[rgba(107,102,93,0.9)] sm:h-6 sm:text-[9px]"
+                          className="flex h-7 w-full items-center justify-center rounded-[6px] border border-dashed border-border bg-[var(--surface-strong)] text-[10px] font-semibold leading-none text-muted sm:h-6 sm:text-[9px]"
                           title="Ya registraste una eleccion para esta fecha"
                         >
                           {day.dayNumber}
@@ -342,10 +342,10 @@ export function HomeFlow({
                           setSelectedMenuDayId(day.menuDayId);
                           setSelectedMenuOptionId("");
                         }}
-                        className={`flex h-7 w-full items-center justify-center rounded-[6px] border text-[10px] font-semibold leading-none transition hover:bg-surface sm:h-6 sm:text-[9px] ${
+                        className={`flex h-7 w-full items-center justify-center rounded-[6px] border text-[10px] font-semibold leading-none transition hover:-translate-y-0.5 hover:bg-[var(--surface-strong)] sm:h-6 sm:text-[9px] ${
                           isSelected
-                            ? "border-[var(--accent)] bg-[rgba(180,83,9,0.16)] text-[var(--accent)] ring-1 ring-[rgba(180,83,9,0.24)]"
-                            : "border-[rgba(29,29,27,0.14)] bg-white text-foreground shadow-[0_8px_16px_-16px_rgba(29,29,27,0.45)]"
+                            ? "border-[var(--accent-border)] bg-[var(--accent-soft)] text-[var(--accent)] shadow-[0_0_0_1px_var(--accent-border)]"
+                            : "border-border bg-white text-foreground shadow-[var(--shadow-soft)]"
                         }`}
                       >
                         {day.dayNumber}
@@ -356,15 +356,15 @@ export function HomeFlow({
 
                 <div className="mt-4 flex flex-wrap gap-3 text-[11px] text-muted">
                   <span className="inline-flex items-center gap-2">
-                    <span className="h-2.5 w-2.5 rounded-[4px] border border-[rgba(29,29,27,0.14)] bg-white" />
+                    <span className="h-2.5 w-2.5 rounded-[4px] border border-border bg-white" />
                     Disponible
                   </span>
                   <span className="inline-flex items-center gap-2">
-                    <span className="h-2.5 w-2.5 rounded-[4px] border border-[var(--accent)] bg-[rgba(180,83,9,0.16)]" />
+                    <span className="h-2.5 w-2.5 rounded-[4px] border border-[var(--accent-border)] bg-[var(--accent-soft)]" />
                     Seleccionado
                   </span>
                   <span className="inline-flex items-center gap-2">
-                    <span className="h-2.5 w-2.5 rounded-[4px] border border-dashed border-[rgba(107,102,93,0.35)] bg-[rgba(107,102,93,0.08)]" />
+                    <span className="h-2.5 w-2.5 rounded-[4px] border border-dashed border-border bg-[var(--surface-strong)]" />
                     Ya usado
                   </span>
                 </div>
@@ -375,7 +375,7 @@ export function HomeFlow({
               <button
                 type="button"
                 onClick={() => setCurrentStep(1)}
-                className="rounded-2xl border border-border bg-background px-5 py-3 text-sm font-medium transition-colors hover:bg-surface"
+                className="rounded-[16px] border border-[color:var(--border-strong)] bg-[var(--card)] px-5 py-3 text-sm font-medium transition-colors hover:bg-[var(--surface-strong)]"
               >
                 Volver
               </button>
@@ -383,7 +383,7 @@ export function HomeFlow({
                 type="button"
                 disabled={!canAdvanceFromStep2}
                 onClick={() => setCurrentStep(3)}
-                className="rounded-2xl bg-foreground px-5 py-3 text-sm font-medium text-background transition-opacity disabled:cursor-not-allowed disabled:opacity-50"
+                className="rounded-[16px] bg-[linear-gradient(180deg,var(--accent),#0a5a54)] px-5 py-3 text-sm font-medium text-white shadow-[0_14px_26px_-16px_rgba(15,23,42,0.28)] transition hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 Continuar
               </button>
@@ -392,7 +392,7 @@ export function HomeFlow({
         ) : null}
 
         {currentStep === 3 ? (
-          <section className="rounded-[2rem] border border-border bg-surface p-6 sm:p-8">
+          <section className="rounded-[26px] border border-border bg-[linear-gradient(180deg,rgba(255,255,255,0.96),rgba(245,249,248,0.92))] p-6 shadow-[var(--shadow-card)] sm:p-8">
             <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-accent">
               Paso 3
             </p>
@@ -401,8 +401,8 @@ export function HomeFlow({
             </h2>
 
             {selectedMenuDay ? (
-              <div className="mt-6 rounded-[18px] border border-border bg-background px-4 py-4">
-                <div className="mb-3 border-b border-[rgba(107,102,93,0.12)] pb-2">
+              <div className="mt-6 rounded-[20px] border border-border bg-[var(--card)] px-4 py-4 shadow-[var(--shadow-soft)]">
+                <div className="mb-3 border-b border-border pb-2">
                   <div className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted">
                     {selectedMenuDay.fullDateLabel}
                   </div>
@@ -418,7 +418,7 @@ export function HomeFlow({
                         onChange={() => setSelectedMenuOptionId(option.id)}
                         className="peer sr-only"
                       />
-                      <span className="block rounded-[18px] border border-border bg-white px-4 py-4 shadow-[0_10px_30px_-26px_rgba(29,29,27,0.28)] transition duration-150 hover:-translate-y-0.5 hover:bg-surface hover:shadow-[0_16px_28px_-24px_rgba(29,29,27,0.35)] peer-checked:border-[var(--accent)] peer-checked:ring-2 peer-checked:ring-[rgba(180,83,9,0.18)]">
+                      <span className="block rounded-[20px] border border-border bg-white px-4 py-4 shadow-[var(--shadow-soft)] transition duration-150 hover:-translate-y-0.5 hover:bg-[var(--surface-strong)] hover:shadow-[0_16px_28px_-24px_rgba(15,23,42,0.24)] peer-checked:border-[var(--accent-border)] peer-checked:bg-[var(--accent-soft)] peer-checked:shadow-[0_0_0_1px_var(--accent-border)]">
                         <span className="block min-w-0">
                           <span className="block text-[11px] font-semibold uppercase tracking-[0.16em] text-muted">
                             Menu {index + 1}
@@ -438,7 +438,7 @@ export function HomeFlow({
               <button
                 type="button"
                 onClick={() => setCurrentStep(2)}
-                className="rounded-2xl border border-border bg-background px-5 py-3 text-sm font-medium transition-colors hover:bg-surface"
+                className="rounded-[16px] border border-[color:var(--border-strong)] bg-[var(--card)] px-5 py-3 text-sm font-medium transition-colors hover:bg-[var(--surface-strong)]"
               >
                 Volver
               </button>
@@ -446,7 +446,7 @@ export function HomeFlow({
                 type="button"
                 disabled={!canAdvanceFromStep3}
                 onClick={() => setCurrentStep(4)}
-                className="rounded-2xl bg-foreground px-5 py-3 text-sm font-medium text-background transition-opacity disabled:cursor-not-allowed disabled:opacity-50"
+                className="rounded-[16px] bg-[linear-gradient(180deg,var(--accent),#0a5a54)] px-5 py-3 text-sm font-medium text-white shadow-[0_14px_26px_-16px_rgba(15,23,42,0.28)] transition hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 Continuar
               </button>
@@ -455,7 +455,7 @@ export function HomeFlow({
         ) : null}
 
         {currentStep === 4 ? (
-          <section className="rounded-[2rem] border border-border bg-surface p-6 sm:p-8">
+          <section className="rounded-[26px] border border-border bg-[linear-gradient(180deg,rgba(255,255,255,0.96),rgba(245,249,248,0.92))] p-6 shadow-[var(--shadow-card)] sm:p-8">
             <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-accent">
               Paso 4
             </p>
@@ -463,7 +463,7 @@ export function HomeFlow({
               Confirmar selecci&oacute;n
             </h2>
 
-            <div className="mt-6 rounded-[18px] border border-border bg-background px-4 py-4">
+            <div className="mt-6 rounded-[20px] border border-border bg-[var(--card)] px-4 py-4 shadow-[var(--shadow-soft)]">
               <div className="space-y-3 text-sm">
                 <div>
                   <span className="font-semibold">Persona:</span>{" "}
@@ -486,14 +486,14 @@ export function HomeFlow({
               <button
                 type="button"
                 onClick={() => setCurrentStep(3)}
-                className="rounded-2xl border border-border bg-background px-5 py-3 text-sm font-medium transition-colors hover:bg-surface"
+                className="rounded-[16px] border border-[color:var(--border-strong)] bg-[var(--card)] px-5 py-3 text-sm font-medium transition-colors hover:bg-[var(--surface-strong)]"
               >
                 Volver
               </button>
               <button
                 type="submit"
                 disabled={!canSubmit}
-                className="rounded-2xl bg-foreground px-5 py-3 text-sm font-medium text-background transition-opacity disabled:cursor-not-allowed disabled:opacity-50"
+                className="rounded-[16px] bg-[linear-gradient(180deg,var(--accent),#0a5a54)] px-5 py-3 text-sm font-medium text-white shadow-[0_14px_26px_-16px_rgba(15,23,42,0.28)] transition hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 Confirmar seleccion
               </button>

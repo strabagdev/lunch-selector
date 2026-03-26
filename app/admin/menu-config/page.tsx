@@ -368,7 +368,7 @@ export default async function AdminMenuConfigPage({
                     <input type="hidden" name="menuDayId" value={menuDay.id} />
                     <button
                       type="submit"
-                      className="rounded-2xl border border-[rgba(154,52,18,0.18)] bg-[rgba(154,52,18,0.06)] px-4 py-2.5 text-sm font-medium text-[rgb(154,52,18)] transition-colors hover:bg-[rgba(154,52,18,0.1)]"
+                      className="rounded-2xl border border-[var(--danger-border)] bg-[var(--danger-soft)] px-4 py-2.5 text-sm font-medium text-[var(--danger)] transition-colors hover:bg-[rgba(220,63,97,0.14)]"
                     >
                       Eliminar fecha
                     </button>
@@ -444,7 +444,7 @@ export default async function AdminMenuConfigPage({
                               <input type="hidden" name="optionId" value={option.id} />
                               <button
                                 type="submit"
-                                className="rounded-2xl border border-[rgba(154,52,18,0.18)] bg-[rgba(154,52,18,0.06)] px-4 py-3 text-sm font-medium text-[rgb(154,52,18)] transition-colors hover:bg-[rgba(154,52,18,0.1)]"
+                                className="rounded-2xl border border-[var(--danger-border)] bg-[var(--danger-soft)] px-4 py-3 text-sm font-medium text-[var(--danger)] transition-colors hover:bg-[rgba(220,63,97,0.14)]"
                               >
                                 Eliminar
                               </button>

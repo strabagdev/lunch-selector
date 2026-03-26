@@ -1,17 +1,26 @@
 @import "tailwindcss";
 
 :root {
-  --background: #f5f1e8;
-  --foreground: #1d1d1b;
-  --surface: #fffdf8;
-  --muted: #6b665d;
-  --border: #ded6c8;
-  --accent: #b45309;
-  --success: #2f6f4f;
-  --success-soft: rgba(47, 111, 79, 0.12);
-  --success-border: rgba(47, 111, 79, 0.22);
-  --accent-soft: rgba(180, 83, 9, 0.12);
-  --accent-border: rgba(180, 83, 9, 0.22);
+  --background: #edf4f0;
+  --foreground: #11201c;
+  --card: rgba(255, 255, 255, 0.9);
+  --surface: rgba(255, 255, 255, 0.82);
+  --surface-strong: rgba(245, 249, 248, 0.96);
+  --muted: #5a6b64;
+  --border: rgba(17, 32, 28, 0.1);
+  --border-strong: rgba(17, 32, 28, 0.14);
+  --input: rgba(17, 32, 28, 0.14);
+  --accent: #0f766e;
+  --success: #0f9f6e;
+  --danger: #dc3f61;
+  --success-soft: rgba(15, 159, 110, 0.12);
+  --success-border: rgba(15, 159, 110, 0.24);
+  --accent-soft: #d7f3ef;
+  --accent-border: rgba(15, 118, 110, 0.22);
+  --danger-soft: rgba(220, 63, 97, 0.08);
+  --danger-border: rgba(220, 63, 97, 0.2);
+  --shadow-card: 0 20px 60px -44px rgba(15, 23, 42, 0.3);
+  --shadow-soft: 0 10px 30px -26px rgba(15, 23, 42, 0.28);
 }
 
 @theme inline {
@@ -32,11 +41,15 @@
 }
 
 html {
-  background: var(--background);
+  background:
+    radial-gradient(circle at top, rgba(15, 118, 110, 0.1), transparent 30%),
+    var(--background);
 }
 
 body {
-  background: var(--background);
+  background:
+    radial-gradient(circle at top, rgba(15, 118, 110, 0.1), transparent 30%),
+    var(--background);
   color: var(--foreground);
   font-family: "Segoe UI", "Helvetica Neue", Helvetica, Arial, sans-serif;
 }
