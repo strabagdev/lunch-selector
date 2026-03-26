@@ -10,6 +10,8 @@ type HomePageProps = {
   searchParams: Promise<{
     menuDay?: string | string[] | undefined;
     success?: string | string[] | undefined;
+    person?: string | string[] | undefined;
+    option?: string | string[] | undefined;
   }>;
 };
 
@@ -40,8 +42,17 @@ function getDateKey(date: Date) {
   return date.toISOString().slice(0, 10);
 }
 
-function getMonthKey(date: Date) {
-  return date.toISOString().slice(0, 7);
+function addUtcDays(date: Date, days: number) {
+  const nextDate = new Date(date);
+  nextDate.setUTCDate(nextDate.getUTCDate() + days);
+  return nextDate;
+}
+
+function getWeekStart(date: Date) {
+  const weekStart = new Date(date);
+  const weekDay = (weekStart.getUTCDay() + 6) % 7;
+  weekStart.setUTCDate(weekStart.getUTCDate() - weekDay);
+  return weekStart;
 }
 
 export default async function Home({ searchParams }: HomePageProps) {
@@ -50,10 +61,13 @@ export default async function Home({ searchParams }: HomePageProps) {
   const resolvedSearchParams = await searchParams;
   const requestedMenuDayId = getMenuDayParam(resolvedSearchParams.menuDay);
   const successParam = getMenuDayParam(resolvedSearchParams.success);
+  const initialPersonId = getMenuDayParam(resolvedSearchParams.person);
+  const initialOptionId = getMenuDayParam(resolvedSearchParams.option);
   const todayKey = getTodayKey();
-  const currentMonthKey = todayKey.slice(0, 7);
   const todayDate = new Date(`${todayKey}T00:00:00.000Z`);
-  const monthStart = new Date(`${currentMonthKey}-01T00:00:00.000Z`);
+  const visibleRangeStart = getWeekStart(todayDate);
+  const visibleRangeEnd = addUtcDays(visibleRangeStart, 13);
+  const visibleRangeEndKey = getDateKey(visibleRangeEnd);
   const todayLabel = formatMenuDate(todayDate);
 
   const [people, availableMenuDays] = await Promise.all([
@@ -96,8 +110,8 @@ export default async function Home({ searchParams }: HomePageProps) {
 
   const selectableMenuDays = availableMenuDays.filter(
     (availableMenuDay) =>
-      getMonthKey(availableMenuDay.date) === currentMonthKey &&
-      availableMenuDay.options.length > 0,
+      availableMenuDay.options.length > 0 &&
+      getDateKey(availableMenuDay.date) <= visibleRangeEndKey,
   );
 
   const requestedMenuDaySummary =
@@ -109,53 +123,28 @@ export default async function Home({ searchParams }: HomePageProps) {
     selectableMenuDays[0]?.id ??
     null;
 
-  const daysInSelectedMonth = new Date(
-    Date.UTC(
-      monthStart.getUTCFullYear(),
-      monthStart.getUTCMonth() + 1,
-      0,
-    ),
-  ).getUTCDate();
   const calendarWeekdays = ["Lun", "Mar", "Mie", "Jue", "Vie", "Sab", "Dom"];
-  const firstDayWeekIndex =
-    (new Date(
-      Date.UTC(monthStart.getUTCFullYear(), monthStart.getUTCMonth(), 1),
-    ).getUTCDay() +
-      6) %
-    7;
   const menuDayByDateKey = new Map(
     selectableMenuDays.map((availableMenuDay) => [
       getDateKey(availableMenuDay.date),
       availableMenuDay,
     ]),
   );
-  const calendarDays = [
-    ...Array.from({ length: firstDayWeekIndex }, (_, index) => ({
-      kind: "empty" as const,
-      key: `empty-${index}`,
-    })),
-    ...Array.from({ length: daysInSelectedMonth }, (_, index) => {
-      const date = new Date(
-        Date.UTC(
-          monthStart.getUTCFullYear(),
-          monthStart.getUTCMonth(),
-          index + 1,
-        ),
-      );
-      const dateKey = getDateKey(date);
-      const availableMenuDay = menuDayByDateKey.get(dateKey);
+  const calendarDays = Array.from({ length: 14 }, (_, index) => {
+    const date = addUtcDays(visibleRangeStart, index);
+    const dateKey = getDateKey(date);
+    const availableMenuDay = menuDayByDateKey.get(dateKey);
 
-      return {
-        kind: "day" as const,
-        key: dateKey,
-        dateKey,
-        dayNumber: index + 1,
-        isPast: dateKey < todayKey,
-        menuDayId: availableMenuDay?.id ?? null,
-        hasOptions: availableMenuDay ? availableMenuDay.options.length > 0 : false,
-      };
-    }),
-  ];
+    return {
+      kind: "day" as const,
+      key: dateKey,
+      dateKey,
+      dayNumber: date.getUTCDate(),
+      isPast: dateKey < todayKey,
+      menuDayId: availableMenuDay?.id ?? null,
+      hasOptions: availableMenuDay ? availableMenuDay.options.length > 0 : false,
+    };
+  });
 
   async function submitSelection(formData: FormData) {
     "use server";
@@ -218,7 +207,9 @@ export default async function Home({ searchParams }: HomePageProps) {
 
     revalidatePath("/");
     revalidatePath("/admin");
-    redirect("/?success=1");
+    redirect(
+      `/?success=1&person=${encodeURIComponent(personId)}&menuDay=${encodeURIComponent(menuDayId)}&option=${encodeURIComponent(menuOptionId)}`,
+    );
   }
 
   return (
@@ -253,12 +244,14 @@ export default async function Home({ searchParams }: HomePageProps) {
               })),
             };
           })}
-          calendarWeekdays={calendarWeekdays}
-          calendarDays={calendarDays}
-          initialMenuDayId={initialMenuDayId}
-          initialSuccess={successParam === "1"}
-          submitSelection={submitSelection}
-        />
+        calendarWeekdays={calendarWeekdays}
+        calendarDays={calendarDays}
+        initialMenuDayId={initialMenuDayId}
+        initialPersonId={initialPersonId ?? null}
+        initialOptionId={initialOptionId ?? null}
+        initialSuccess={successParam === "1"}
+        submitSelection={submitSelection}
+      />
       </main>
     </>
   );

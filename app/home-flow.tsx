@@ -43,6 +43,8 @@ type HomeFlowProps = {
       }
   >;
   initialMenuDayId: string | null;
+  initialPersonId: string | null;
+  initialOptionId: string | null;
   initialSuccess: boolean;
   submitSelection: (formData: FormData) => void | Promise<void>;
 };
@@ -67,15 +69,21 @@ export function HomeFlow({
   calendarWeekdays,
   calendarDays,
   initialMenuDayId,
+  initialPersonId,
+  initialOptionId,
   initialSuccess,
   submitSelection,
 }: HomeFlowProps) {
   const [currentStep, setCurrentStep] = useState<1 | 2 | 3 | 4 | 5>(
     initialSuccess ? 5 : 1,
   );
-  const [selectedPersonId, setSelectedPersonId] = useState("");
-  const [selectedMenuDayId, setSelectedMenuDayId] = useState<string | null>(null);
-  const [selectedMenuOptionId, setSelectedMenuOptionId] = useState("");
+  const [selectedPersonId, setSelectedPersonId] = useState(initialPersonId ?? "");
+  const [selectedMenuDayId, setSelectedMenuDayId] = useState<string | null>(
+    initialSuccess ? initialMenuDayId : null,
+  );
+  const [selectedMenuOptionId, setSelectedMenuOptionId] = useState(
+    initialSuccess ? initialOptionId ?? "" : "",
+  );
 
   const selectedMenuDay =
     menuDays.find((menuDay) => menuDay.id === selectedMenuDayId) ?? null;
@@ -86,6 +94,9 @@ export function HomeFlow({
   const selectedPersonHasAnyAvailableDate = selectedPersonId
     ? menuDays.some((menuDay) => !menuDay.selectedPersonIds.includes(selectedPersonId))
     : false;
+  const nextAvailableMenuDayId = selectedPersonId
+    ? getFirstAvailableMenuDayId(menuDays, selectedPersonId)
+    : null;
   const canAdvanceFromStep1 = selectedPersonId.length > 0;
   const canAdvanceFromStep2 = selectedMenuDay !== null;
   const canAdvanceFromStep3 = selectedMenuOptionId.length > 0;
@@ -200,10 +211,29 @@ export function HomeFlow({
               Almuerzo confirmado.
             </h2>
             <p className="mt-4 text-sm leading-6 text-muted">
-              Puedes cerrar esta ventana.
+              Tu eleccion fue registrada correctamente.
             </p>
 
-            <div className="mt-8">
+            <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+              {nextAvailableMenuDayId ? (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSelectedMenuDayId(nextAvailableMenuDayId);
+                    setSelectedMenuOptionId("");
+                    setCurrentStep(2);
+                  }}
+                  className="rounded-2xl bg-foreground px-5 py-3 text-sm font-medium text-background transition-opacity"
+                >
+                  Seleccionar otra fecha
+                </button>
+              ) : (
+                <p className="text-sm leading-6 text-muted">
+                  Las fechas disponibles para esta persona ya quedaron
+                  programadas.
+                </p>
+              )}
+
               <button
                 type="button"
                 onClick={() => {
@@ -212,9 +242,9 @@ export function HomeFlow({
                   setSelectedMenuOptionId("");
                   setCurrentStep(1);
                 }}
-                className="text-sm font-medium text-muted underline underline-offset-4 transition-colors hover:text-foreground"
+                className="rounded-2xl border border-border bg-background px-5 py-3 text-sm font-medium transition-colors hover:bg-surface"
               >
-                Volver al principio
+                Cambiar persona
               </button>
             </div>
           </section>
@@ -297,7 +327,7 @@ export function HomeFlow({
             {!selectedPersonHasAnyAvailableDate ? (
               <p className="mt-6 text-sm leading-6 text-muted">
                 Esta persona ya registr&oacute; elecci&oacute;n en todas las fechas
-                disponibles del mes actual.
+                disponibles entre esta semana y la siguiente.
               </p>
             ) : (
               <div className="mt-6 rounded-[18px] border border-border bg-background px-4 py-4">
