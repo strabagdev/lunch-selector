@@ -17,6 +17,7 @@ type MenuDayItem = {
   id: string;
   dateKey: string;
   fullDateLabel: string;
+  shortDateLabel: string;
   dayNumber: number;
   options: MenuOptionItem[];
   selectedPersonIds: string[];
@@ -110,6 +111,7 @@ export function HomeFlow({
             {
               menuDayId: menuDay.id,
               fullDateLabel: menuDay.fullDateLabel,
+              shortDateLabel: menuDay.shortDateLabel,
               menuOptionName: selection.menuOptionName,
             },
           ];
@@ -292,19 +294,21 @@ export function HomeFlow({
                       {selectedPersonCoveredDays.map((coveredDay) => (
                         <div
                           key={coveredDay.menuDayId}
-                          className="flex items-baseline justify-between gap-3 text-xs"
+                          className="rounded-[14px] bg-white/70 px-3 py-2"
                         >
-                          <span className="text-muted">{coveredDay.fullDateLabel}</span>
-                          <span className="truncate font-medium text-foreground">
+                          <div className="text-[11px] font-medium uppercase tracking-[0.08em] text-muted">
+                            {coveredDay.shortDateLabel}
+                          </div>
+                          <div className="mt-1 text-sm font-medium leading-5 text-foreground">
                             {coveredDay.menuOptionName}
-                          </span>
+                          </div>
                         </div>
                       ))}
                     </div>
                   </div>
                 ) : (
                   <p className="text-xs leading-5 text-muted">
-                    A&uacute;n no tienes almuerzos registrados en las fechas disponibles.
+                    Ya puedes comenzar a registrar tus almuerzos en las fechas disponibles.
                   </p>
                 )}
               </div>
@@ -313,9 +317,11 @@ export function HomeFlow({
             <div className="mt-8 flex justify-end">
               <button
                 type="button"
-                disabled={!canAdvanceFromStep1}
+                disabled={!canAdvanceFromStep1 || !selectedPersonHasAnyAvailableDate}
                 onClick={() => setCurrentStep(2)}
-                className="rounded-[16px] bg-[linear-gradient(180deg,var(--accent),#0a5a54)] px-5 py-3 text-sm font-medium text-white shadow-[0_14px_26px_-16px_rgba(15,23,42,0.28)] transition hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-50"
+                className={`rounded-[16px] bg-[linear-gradient(180deg,var(--accent),#0a5a54)] px-5 py-3 text-sm font-medium text-white shadow-[0_14px_26px_-16px_rgba(15,23,42,0.28)] transition hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-50 ${
+                  selectedPerson && !selectedPersonHasAnyAvailableDate ? "hidden" : ""
+                }`}
               >
                 Continuar
               </button>
@@ -347,12 +353,14 @@ export function HomeFlow({
                       {selectedPersonCoveredDays.map((coveredDay) => (
                         <div
                           key={coveredDay.menuDayId}
-                          className="flex items-baseline justify-between gap-3 text-xs"
+                          className="rounded-[14px] bg-[rgba(17,32,28,0.03)] px-3 py-2"
                         >
-                          <span className="text-muted">{coveredDay.fullDateLabel}</span>
-                          <span className="truncate font-medium text-foreground">
+                          <div className="text-[11px] font-medium uppercase tracking-[0.08em] text-muted">
+                            {coveredDay.shortDateLabel}
+                          </div>
+                          <div className="mt-1 text-sm font-medium leading-5 text-foreground">
                             {coveredDay.menuOptionName}
-                          </span>
+                          </div>
                         </div>
                       ))}
                     </div>

@@ -25,6 +25,14 @@ function formatMenuDate(date: Date) {
   }).format(date);
 }
 
+function formatShortMenuDate(date: Date) {
+  return new Intl.DateTimeFormat("es-CL", {
+    timeZone: "UTC",
+    day: "numeric",
+    month: "short",
+  }).format(date);
+}
+
 function getTodayKey() {
   return new Intl.DateTimeFormat("en-CA", {
     timeZone: "America/Santiago",
@@ -240,6 +248,7 @@ export default async function Home({ searchParams }: HomePageProps) {
               id: menuDay.id,
               dateKey: getDateKey(menuDay.date),
               fullDateLabel: formatMenuDate(menuDay.date),
+              shortDateLabel: formatShortMenuDate(menuDay.date),
               dayNumber: menuDay.date.getUTCDate(),
               selectedPersonIds: menuDay.selections.map((selection) => selection.personId),
               selections: menuDay.selections.map((selection) => ({
