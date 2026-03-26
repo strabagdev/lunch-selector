@@ -104,31 +104,42 @@ export function HomeFlow({
     selectedPersonId.length > 0 &&
     selectedMenuDay !== null &&
     selectedMenuOptionId.length > 0;
+  const currentProgressStep = Math.min(currentStep, 4);
+  const currentStepMeta = STEPS[currentProgressStep - 1];
 
   return (
     <>
       <section className="rounded-[26px] border border-border bg-surface p-6 shadow-[0_24px_80px_rgba(29,29,27,0.08)] sm:p-8">
-        <div className="space-y-5">
+        <div className="space-y-4">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
             <div className="max-w-xl space-y-2.5">
               <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-accent">
                 Seleccion diaria
               </p>
-              <div className="space-y-2">
-                <h1 className="text-3xl font-semibold leading-none tracking-tight sm:text-4xl xl:text-[2.35rem]">
-                  Registro de almuerzo diario
-                </h1>
-                <p className="text-[15px] leading-6 text-muted">
-                  Avanza paso a paso para registrar tu almuerzo de forma simple.
-                </p>
-              </div>
+              <h1 className="whitespace-nowrap text-[1.65rem] font-semibold leading-none tracking-tight sm:text-4xl xl:text-[2.35rem]">
+                Registro de almuerzo diario
+              </h1>
             </div>
             <p className="text-sm font-medium text-accent sm:pt-1 sm:text-right">
               {todayLabel}
             </p>
           </div>
 
-          <div className="space-y-3">
+          <div className="space-y-2">
+            <div className="flex items-end justify-between gap-3">
+              <div className="space-y-1">
+                <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted">
+                  Paso {currentStepMeta.step} de {STEPS.length}
+                </p>
+                <p className="text-sm font-semibold text-foreground sm:text-base">
+                  {currentStepMeta.title}
+                </p>
+              </div>
+              <p className="text-[11px] font-medium text-muted sm:text-xs">
+                {Math.round(((currentProgressStep - 1) / (STEPS.length - 1)) * 100)}%
+              </p>
+            </div>
+
             <div className="h-1.5 overflow-hidden rounded-full bg-[rgba(107,102,93,0.12)]">
               <div
                 className="h-full rounded-full bg-[linear-gradient(90deg,var(--success),rgba(88,153,113,0.85))] transition-[width] duration-300"
@@ -139,60 +150,6 @@ export function HomeFlow({
                   )}%`,
                 }}
               />
-            </div>
-
-            <div className="grid grid-cols-4 gap-2">
-              {STEPS.map((item) => {
-                const isCurrent = currentStep === item.step;
-                const hasCompletedData =
-                  (item.step === 1 && canAdvanceFromStep1) ||
-                  (item.step === 2 && canAdvanceFromStep2) ||
-                  (item.step === 3 && canAdvanceFromStep3) ||
-                  (item.step === 4 && currentStep === 5);
-                const isDone = item.step < currentStep && hasCompletedData;
-
-                return (
-                  <div key={item.step} className="min-w-0 space-y-1">
-                    <div
-                      className={`flex min-w-0 items-center justify-center gap-2 rounded-[18px] border px-2.5 py-2 sm:justify-start ${
-                        isCurrent
-                          ? "border-[var(--accent-border)] bg-[var(--accent-soft)] shadow-[inset_0_0_0_1px_rgba(180,83,9,0.08)]"
-                          : isDone
-                            ? "border-[var(--success-border)] bg-[var(--success-soft)]"
-                            : "border-border bg-background"
-                      }`}
-                    >
-                      <span
-                        className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full border text-[10px] font-semibold sm:h-7 sm:w-7 sm:text-[11px] ${
-                          isCurrent
-                            ? "border-[var(--accent-border)] bg-[rgba(180,83,9,0.18)] text-[var(--accent)]"
-                            : isDone
-                              ? "border-[var(--success-border)] bg-[rgba(47,111,79,0.16)] text-[var(--success)]"
-                              : "border-border bg-surface text-muted"
-                        }`}
-                      >
-                        {isDone && !isCurrent ? "✓" : item.step}
-                      </span>
-
-                      <p
-                        className={`hidden truncate text-sm font-semibold sm:block ${
-                          isDone && !isCurrent ? "text-[var(--success)]" : ""
-                        }`}
-                      >
-                        {item.step} {item.title}
-                      </p>
-                    </div>
-
-                    <p
-                      className={`px-1 text-center text-[11px] font-semibold sm:hidden ${
-                        isDone && !isCurrent ? "text-[var(--success)]" : "text-muted"
-                      }`}
-                    >
-                      {item.title}
-                    </p>
-                  </div>
-                );
-              })}
             </div>
           </div>
         </div>
