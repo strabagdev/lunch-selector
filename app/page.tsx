@@ -50,19 +50,6 @@ function getDateKey(date: Date) {
   return date.toISOString().slice(0, 10);
 }
 
-function addUtcDays(date: Date, days: number) {
-  const nextDate = new Date(date);
-  nextDate.setUTCDate(nextDate.getUTCDate() + days);
-  return nextDate;
-}
-
-function getWeekStart(date: Date) {
-  const weekStart = new Date(date);
-  const weekDay = (weekStart.getUTCDay() + 6) % 7;
-  weekStart.setUTCDate(weekStart.getUTCDate() - weekDay);
-  return weekStart;
-}
-
 export default async function Home({ searchParams }: HomePageProps) {
   const shareUrl =
     process.env.NEXT_PUBLIC_APP_URL ?? "https://lunch-selector-production.up.railway.app/";
@@ -73,9 +60,6 @@ export default async function Home({ searchParams }: HomePageProps) {
   const initialOptionId = getMenuDayParam(resolvedSearchParams.option);
   const todayKey = getTodayKey();
   const todayDate = new Date(`${todayKey}T00:00:00.000Z`);
-  const visibleRangeStart = getWeekStart(todayDate);
-  const visibleRangeEnd = addUtcDays(visibleRangeStart, 13);
-  const visibleRangeEndKey = getDateKey(visibleRangeEnd);
   const todayLabel = formatMenuDate(todayDate);
 
   const [people, availableMenuDays] = await Promise.all([
@@ -122,9 +106,7 @@ export default async function Home({ searchParams }: HomePageProps) {
   ]);
 
   const selectableMenuDays = availableMenuDays.filter(
-    (availableMenuDay) =>
-      availableMenuDay.options.length > 0 &&
-      getDateKey(availableMenuDay.date) <= visibleRangeEndKey,
+    (availableMenuDay) => availableMenuDay.options.length > 0,
   );
 
   const requestedMenuDaySummary =
@@ -135,29 +117,6 @@ export default async function Home({ searchParams }: HomePageProps) {
       ?.id ??
     selectableMenuDays[0]?.id ??
     null;
-
-  const calendarWeekdays = ["Lun", "Mar", "Mie", "Jue", "Vie", "Sab", "Dom"];
-  const menuDayByDateKey = new Map(
-    selectableMenuDays.map((availableMenuDay) => [
-      getDateKey(availableMenuDay.date),
-      availableMenuDay,
-    ]),
-  );
-  const calendarDays = Array.from({ length: 14 }, (_, index) => {
-    const date = addUtcDays(visibleRangeStart, index);
-    const dateKey = getDateKey(date);
-    const availableMenuDay = menuDayByDateKey.get(dateKey);
-
-    return {
-      kind: "day" as const,
-      key: dateKey,
-      dateKey,
-      dayNumber: date.getUTCDate(),
-      isPast: dateKey < todayKey,
-      menuDayId: availableMenuDay?.id ?? null,
-      hasOptions: availableMenuDay ? availableMenuDay.options.length > 0 : false,
-    };
-  });
 
   async function submitSelection(formData: FormData) {
     "use server";
@@ -262,8 +221,6 @@ export default async function Home({ searchParams }: HomePageProps) {
               })),
             };
           })}
-        calendarWeekdays={calendarWeekdays}
-        calendarDays={calendarDays}
         initialMenuDayId={initialMenuDayId}
         initialPersonId={initialPersonId ?? null}
         initialOptionId={initialOptionId ?? null}

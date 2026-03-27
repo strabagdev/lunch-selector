@@ -1,13 +1,17 @@
 import Link from "next/link";
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import ConfirmSubmitButton from "@/app/admin/confirm-submit-button";
+import { getDailyReportConfigStatus } from "@/lib/daily-report";
+import { sendDailyReportEmail } from "@/lib/report-email";
 
 export const dynamic = "force-dynamic";
 
 type AdminPageProps = {
   searchParams: Promise<{
     menuDay?: string | string[] | undefined;
+    report?: string | string[] | undefined;
   }>;
 };
 
@@ -33,9 +37,60 @@ function formatShortMenuDate(date: Date) {
   }).format(date);
 }
 
+function formatSelectionTime(date: Date) {
+  return new Intl.DateTimeFormat("es-CL", {
+    timeZone: "America/Santiago",
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(date);
+}
+
+function getTodayKey() {
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: "America/Santiago",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(new Date());
+}
+
 export default async function AdminPage({ searchParams }: AdminPageProps) {
   const resolvedSearchParams = await searchParams;
   const requestedMenuDayId = getMenuDayParam(resolvedSearchParams.menuDay);
+  const reportStatus = getMenuDayParam(resolvedSearchParams.report);
+  const dailyReportConfig = getDailyReportConfigStatus();
+  const todayKey = getTodayKey();
+  const todayDate = new Date(`${todayKey}T00:00:00.000Z`);
+
+  async function sendManualDailyReport() {
+    "use server";
+
+    let nextReportStatus = "error";
+
+    try {
+      const result = await sendDailyReportEmail();
+
+      if (result.status === "sent") {
+        nextReportStatus = "sent";
+      } else if (result.status === "skipped") {
+        nextReportStatus =
+          result.reason === "no_available_options" ? "no-options" : "no-menu";
+      } else if (result.status === "not_configured") {
+        nextReportStatus = "not-configured";
+      }
+    } catch (error) {
+      console.error("Manual daily report failed", error);
+    }
+
+    const nextParams = new URLSearchParams();
+
+    if (requestedMenuDayId) {
+      nextParams.set("menuDay", requestedMenuDayId);
+    }
+
+    nextParams.set("report", nextReportStatus);
+    redirect(`/admin?${nextParams.toString()}`);
+  }
 
   async function deleteSelection(formData: FormData) {
     "use server";
@@ -57,6 +112,9 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
 
   const menuDays = await prisma.menuDay.findMany({
     where: {
+      date: {
+        gte: todayDate,
+      },
       options: {
         some: {
           isAvailable: true,
@@ -81,7 +139,12 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
   });
 
   const selectedMenuDaySummary =
-    menuDays.find((menuDay) => menuDay.id === requestedMenuDayId) ?? menuDays[0] ?? null;
+    menuDays.find((menuDay) => menuDay.id === requestedMenuDayId) ??
+    menuDays.find(
+      (menuDay) => menuDay.date.toISOString().slice(0, 10) === todayKey,
+    ) ??
+    menuDays[0] ??
+    null;
 
   const menuDay = selectedMenuDaySummary
     ? await prisma.menuDay.findUnique({
@@ -103,6 +166,7 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
               id: true,
               personId: true,
               menuOptionId: true,
+              selectedAt: true,
               person: {
                 select: {
                   id: true,
@@ -116,7 +180,7 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
                 },
               },
             },
-            orderBy: [{ menuOption: { sortOrder: "asc" } }, { person: { name: "asc" } }],
+            orderBy: [{ selectedAt: "desc" }],
           },
         },
       })
@@ -135,6 +199,78 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
 
   return (
     <div className="space-y-6">
+      <section className="rounded-[26px] border border-border bg-[linear-gradient(180deg,rgba(255,255,255,0.96),rgba(245,249,248,0.92))] p-6 shadow-[var(--shadow-card)] sm:p-8">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+          <div className="space-y-2">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-accent">
+              Reporte diario
+            </p>
+            <h2 className="text-2xl font-semibold tracking-tight">
+              Envio de conteo por correo
+            </h2>
+            <p className="text-sm leading-6 text-muted">
+              Env&iacute;a el resumen de hoy con el conteo total por opci&oacute;n,
+              incluyendo las opciones en 0.
+            </p>
+            {dailyReportConfig.recipients.length > 0 ? (
+              <p className="text-xs leading-5 text-muted">
+                Destinatarios: {dailyReportConfig.recipients.join(", ")}
+              </p>
+            ) : null}
+          </div>
+
+          <form action={sendManualDailyReport}>
+            <button
+              type="submit"
+              disabled={!dailyReportConfig.isReady}
+              className="rounded-[16px] bg-[linear-gradient(180deg,var(--accent),#0a5a54)] px-5 py-3 text-sm font-medium text-white shadow-[0_14px_26px_-16px_rgba(15,23,42,0.28)] transition hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              Enviar resumen de hoy
+            </button>
+          </form>
+        </div>
+
+        {reportStatus === "sent" ? (
+          <div className="mt-4 rounded-[18px] border border-[rgba(15,118,110,0.18)] bg-[rgba(15,118,110,0.06)] px-4 py-3 text-sm text-[var(--accent)]">
+            El resumen diario fue enviado correctamente.
+          </div>
+        ) : null}
+
+        {reportStatus === "no-menu" ? (
+          <div className="mt-4 rounded-[18px] border border-border bg-background px-4 py-3 text-sm text-muted">
+            Hoy no hay un men&uacute; configurado con opciones disponibles, as&iacute;
+            que no se envi&oacute; correo.
+          </div>
+        ) : null}
+
+        {reportStatus === "no-options" ? (
+          <div className="mt-4 rounded-[18px] border border-border bg-background px-4 py-3 text-sm text-muted">
+            Hoy no hay opciones disponibles para incluir en el reporte.
+          </div>
+        ) : null}
+
+        {reportStatus === "not-configured" ? (
+          <div className="mt-4 rounded-[18px] border border-[rgba(220,63,97,0.16)] bg-[rgba(220,63,97,0.06)] px-4 py-3 text-sm text-[var(--danger)]">
+            Faltan variables de entorno para habilitar el reporte:{" "}
+            {dailyReportConfig.missing.join(", ")}.
+          </div>
+        ) : null}
+
+        {reportStatus === "error" ? (
+          <div className="mt-4 rounded-[18px] border border-[rgba(220,63,97,0.16)] bg-[rgba(220,63,97,0.06)] px-4 py-3 text-sm text-[var(--danger)]">
+            No se pudo enviar el reporte diario. Revisa los logs del despliegue y la
+            configuraci&oacute;n de correo.
+          </div>
+        ) : null}
+
+        {!dailyReportConfig.isReady ? (
+          <p className="mt-4 text-xs leading-5 text-muted">
+            Para activar el env&iacute;o manual y autom&aacute;tico faltan:{" "}
+            {dailyReportConfig.missing.join(", ")}.
+          </p>
+        ) : null}
+      </section>
+
       <section className="rounded-[26px] border border-border bg-[linear-gradient(180deg,rgba(255,255,255,0.96),rgba(245,249,248,0.92))] p-6 shadow-[var(--shadow-card)] sm:p-8">
         {menuDays.length === 0 ? (
           <div className="rounded-3xl border border-dashed border-border bg-background px-5 py-4 text-sm leading-6 text-muted">
@@ -221,39 +357,71 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
               </p>
             ) : (
               <div className="mt-6 overflow-hidden rounded-[20px] border border-border bg-[var(--card)] shadow-[var(--shadow-soft)]">
-                <div className="grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto] gap-3 border-b border-border px-4 py-3 text-[11px] font-semibold uppercase tracking-[0.14em] text-muted">
+                <div className="hidden grid-cols-[minmax(0,1fr)_minmax(0,1fr)_72px_auto] gap-3 border-b border-border px-4 py-3 text-[11px] font-semibold uppercase tracking-[0.14em] text-muted sm:grid">
                   <span>Persona</span>
                   <span>Men&uacute;</span>
+                  <span>Hora</span>
                   <span>Acci&oacute;n</span>
                 </div>
 
                 <div className="divide-y divide-border">
                   {menuDay.selections.map((selection) => (
-                    <div
-                      key={selection.id}
-                      className="grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto] items-center gap-3 px-4 py-3"
-                    >
-                      <span className="truncate text-sm font-medium">
-                        {selection.person.name}
-                      </span>
-                      <span className="truncate text-sm text-muted">
-                        {selection.menuOption.name}
-                      </span>
-                      <form action={deleteSelection}>
+                    <div key={selection.id} className="px-4 py-3">
+                      <div className="flex items-start justify-between gap-3 sm:hidden">
+                        <div className="min-w-0 flex-1 space-y-1">
+                          <span className="block truncate text-sm font-medium">
+                            {selection.person.name}
+                          </span>
+                          <span className="block text-sm text-muted">
+                            {selection.menuOption.name}
+                          </span>
+                          <span className="block text-xs text-muted">
+                            {formatSelectionTime(selection.selectedAt)}
+                          </span>
+                        </div>
+                        <form action={deleteSelection}>
+                          <input type="hidden" name="selectionId" value={selection.id} />
+                          <ConfirmSubmitButton
+                            confirmMessage="Se eliminará esta selección para corregirla. ¿Quieres continuar?"
+                            className="group inline-flex h-5 w-5 items-center justify-center rounded-full bg-[rgba(220,63,97,0.1)] text-[var(--danger)] transition hover:bg-[rgba(220,63,97,0.16)]"
+                          >
+                            <span className="sr-only">Eliminar selección</span>
+                            <span
+                              aria-hidden="true"
+                              className="flex h-5 w-5 items-center justify-center text-[15px] font-bold leading-none"
+                            >
+                              ×
+                            </span>
+                          </ConfirmSubmitButton>
+                        </form>
+                      </div>
+
+                      <div className="hidden grid-cols-[minmax(0,1fr)_minmax(0,1fr)_72px_auto] items-center gap-3 sm:grid">
+                        <span className="truncate text-sm font-medium">
+                          {selection.person.name}
+                        </span>
+                        <span className="truncate text-sm text-muted">
+                          {selection.menuOption.name}
+                        </span>
+                        <span className="text-sm text-muted">
+                          {formatSelectionTime(selection.selectedAt)}
+                        </span>
+                        <form action={deleteSelection}>
                         <input type="hidden" name="selectionId" value={selection.id} />
                         <ConfirmSubmitButton
                           confirmMessage="Se eliminará esta selección para corregirla. ¿Quieres continuar?"
-                          className="group inline-flex h-9 w-9 items-center justify-center rounded-[14px] border border-[var(--danger-border)] bg-[linear-gradient(180deg,rgba(255,255,255,1),rgba(255,239,243,0.98))] text-[var(--danger)] shadow-[inset_0_1px_0_rgba(255,255,255,0.9),0_12px_24px_-18px_rgba(220,63,97,0.55)] ring-1 ring-[rgba(255,255,255,0.7)] transition hover:-translate-y-0.5 hover:border-[rgba(220,63,97,0.28)] hover:bg-[linear-gradient(180deg,rgba(255,250,251,1),rgba(255,232,238,1))] hover:shadow-[inset_0_1px_0_rgba(255,255,255,0.92),0_16px_28px_-18px_rgba(220,63,97,0.52)]"
+                          className="group inline-flex h-5 w-5 items-center justify-center rounded-full bg-[rgba(220,63,97,0.1)] text-[var(--danger)] transition hover:bg-[rgba(220,63,97,0.16)]"
                         >
                           <span className="sr-only">Eliminar selección</span>
                           <span
                             aria-hidden="true"
-                            className="flex h-5 w-5 items-center justify-center rounded-full bg-[rgba(220,63,97,0.1)] text-[15px] font-bold leading-none transition group-hover:bg-[rgba(220,63,97,0.16)]"
+                            className="flex h-5 w-5 items-center justify-center text-[15px] font-bold leading-none"
                           >
                             ×
                           </span>
                         </ConfirmSubmitButton>
-                      </form>
+                        </form>
+                      </div>
                     </div>
                   ))}
                 </div>

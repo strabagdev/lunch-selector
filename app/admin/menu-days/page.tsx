@@ -101,27 +101,29 @@ export default async function AdminMenuDaysPage({
   const pastMenuDays = !selectedMonthKey || !monthStart || !nextMonthStart || !historyMonthEnd
     ? []
     : await prisma.menuDay.findMany({
-    where: {
-      date: {
-        gte: monthStart,
-        lt: historyMonthEnd,
-      },
-    },
-    orderBy: { date: "desc" },
-    include: {
-      options: {
-        select: {
-          id: true,
+        where: {
+          date: {
+            gte: monthStart,
+            lt: historyMonthEnd,
+          },
         },
-      },
-      selections: {
-        select: {
-          personId: true,
-          menuOptionId: true,
+        orderBy: { date: "desc" },
+        include: {
+          options: {
+            orderBy: [{ sortOrder: "asc" }, { name: "asc" }],
+            select: {
+              id: true,
+              name: true,
+            },
+          },
+          selections: {
+            select: {
+              personId: true,
+              menuOptionId: true,
+            },
+          },
         },
-      },
-    },
-  });
+      });
 
   const previousMonthKey =
     selectedMonthKey && oldestMonthKey && selectedMonthKey > oldestMonthKey
@@ -186,13 +188,10 @@ export default async function AdminMenuDaysPage({
                         Fecha
                       </th>
                       <th className="border-b border-border px-4 py-3 font-semibold">
-                        Opciones
+                        Almuerzos
                       </th>
                       <th className="border-b border-border px-4 py-3 font-semibold">
-                        Selecciones
-                      </th>
-                      <th className="border-b border-border px-4 py-3 font-semibold">
-                        Personas
+                        Total pedidos
                       </th>
                     </tr>
                   </thead>
@@ -203,13 +202,26 @@ export default async function AdminMenuDaysPage({
                           {formatMenuDate(menuDay.date)}
                         </td>
                         <td className="border-b border-[rgba(107,102,93,0.12)] px-4 py-4 text-muted">
-                          {menuDay.options.length}
+                          <div className="min-w-[260px] space-y-2">
+                            {menuDay.options.map((option) => {
+                              const selectionCount = menuDay.selections.filter(
+                                (selection) => selection.menuOptionId === option.id,
+                              ).length;
+
+                              return (
+                                <div
+                                  key={option.id}
+                                  className="flex items-center justify-between gap-3 rounded-[14px] border border-border bg-background px-3 py-2 text-xs font-medium text-foreground"
+                                >
+                                  <span className="min-w-0 flex-1">{option.name}</span>
+                                  <span className="text-muted">{selectionCount}</span>
+                                </div>
+                              );
+                            })}
+                          </div>
                         </td>
                         <td className="border-b border-[rgba(107,102,93,0.12)] px-4 py-4 text-muted">
                           {menuDay.selections.length}
-                        </td>
-                        <td className="border-b border-[rgba(107,102,93,0.12)] px-4 py-4 text-muted">
-                          {new Set(menuDay.selections.map((selection) => selection.personId)).size}
                         </td>
                       </tr>
                     ))}

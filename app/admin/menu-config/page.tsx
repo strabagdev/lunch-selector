@@ -64,11 +64,6 @@ export default async function AdminMenuConfigPage({
           isAvailable: true,
         },
       },
-      _count: {
-        select: {
-          selections: true,
-        },
-      },
     },
   });
 
@@ -79,9 +74,6 @@ export default async function AdminMenuConfigPage({
     const optionNames = formData
       .getAll("optionName")
       .map((value) => normalizeText(String(value ?? "")));
-    const optionSortOrders = formData
-      .getAll("optionSortOrder")
-      .map((value) => Number(String(value ?? "0")));
 
     if (!dateValue) {
       return;
@@ -91,7 +83,7 @@ export default async function AdminMenuConfigPage({
     const optionsToCreate = optionNames
       .map((name, index) => ({
         name,
-        sortOrder: Number.isFinite(optionSortOrders[index]) ? optionSortOrders[index] : index + 1,
+        sortOrder: index + 1,
       }))
       .filter((option) => option.name.length > 0)
       .filter(
@@ -152,11 +144,21 @@ export default async function AdminMenuConfigPage({
 
     const menuDayId = String(formData.get("menuDayId") ?? "");
     const name = normalizeText(String(formData.get("name") ?? ""));
-    const sortOrderValue = Number(String(formData.get("sortOrder") ?? "0"));
 
     if (!menuDayId || !name) {
       return;
     }
+
+    const menuDayOptions = await prisma.menuOption.findMany({
+      where: { menuDayId },
+      select: {
+        id: true,
+        sortOrder: true,
+      },
+      orderBy: [{ sortOrder: "asc" }, { name: "asc" }],
+    });
+
+    const nextSortOrder = menuDayOptions.length + 1;
 
     const existingOption = await prisma.menuOption.findUnique({
       where: {
@@ -165,14 +167,17 @@ export default async function AdminMenuConfigPage({
           name,
         },
       },
-      select: { id: true },
+      select: {
+        id: true,
+        sortOrder: true,
+      },
     });
 
     if (existingOption) {
       await prisma.menuOption.update({
         where: { id: existingOption.id },
         data: {
-          sortOrder: Number.isFinite(sortOrderValue) ? sortOrderValue : 0,
+          sortOrder: existingOption.sortOrder,
           isAvailable: true,
         },
         select: { id: true },
@@ -182,7 +187,7 @@ export default async function AdminMenuConfigPage({
         data: {
           menuDayId,
           name,
-          sortOrder: Number.isFinite(sortOrderValue) ? sortOrderValue : 0,
+          sortOrder: nextSortOrder,
           isAvailable: true,
         },
         select: { id: true },
@@ -200,7 +205,6 @@ export default async function AdminMenuConfigPage({
     const optionId = String(formData.get("optionId") ?? "");
     const menuDayId = String(formData.get("menuDayId") ?? "");
     const name = normalizeText(String(formData.get("name") ?? ""));
-    const sortOrderValue = Number(String(formData.get("sortOrder") ?? "0"));
 
     if (!optionId || !menuDayId || !name) {
       return;
@@ -224,7 +228,6 @@ export default async function AdminMenuConfigPage({
       where: { id: optionId },
       data: {
         name,
-        sortOrder: Number.isFinite(sortOrderValue) ? sortOrderValue : 0,
       },
       select: { id: true },
     });
@@ -292,25 +295,13 @@ export default async function AdminMenuConfigPage({
           <div className="space-y-3">
             <p className="text-sm font-medium">Opciones iniciales</p>
             {[1, 2, 3].map((item) => (
-              <div
-                key={item}
-                className="grid gap-3 md:grid-cols-[minmax(0,1fr)_110px]"
-              >
+              <div key={item}>
                 <label className="block">
                   <span className="sr-only">Opci&oacute;n {item}</span>
                   <input
                     type="text"
                     name="optionName"
                     placeholder={`Menú ${item}`}
-                    className="w-full rounded-2xl border border-border bg-background px-4 py-3 text-sm outline-none transition-colors focus:border-accent"
-                  />
-                </label>
-                <label className="block">
-                  <span className="sr-only">Orden de opci&oacute;n {item}</span>
-                  <input
-                    type="number"
-                    name="optionSortOrder"
-                    defaultValue={item}
                     className="w-full rounded-2xl border border-border bg-background px-4 py-3 text-sm outline-none transition-colors focus:border-accent"
                   />
                 </label>
@@ -334,25 +325,23 @@ export default async function AdminMenuConfigPage({
           </div>
         ) : (
           menuDays.map((menuDay) => (
-            <section
+            <details
               key={menuDay.id}
+              open={editingMenuDayId === menuDay.id}
               className="rounded-[2rem] border border-border bg-surface p-6 sm:p-8"
             >
-              <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-                <div className="space-y-2">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <span className="rounded-full bg-background px-2.5 py-1 text-[11px] font-semibold text-muted">
-                      {menuDay.options.length} opciones
-                    </span>
-                    <span className="rounded-full bg-background px-2.5 py-1 text-[11px] font-semibold text-muted">
-                      {menuDay._count.selections} selecciones
-                    </span>
-                  </div>
+              <summary className="cursor-pointer list-none">
+                <div className="flex items-center justify-between gap-4">
                   <h3 className="text-xl font-semibold tracking-tight">
                     {formatMenuDate(menuDay.date)}
                   </h3>
+                  <span className="text-sm text-muted">
+                    {editingMenuDayId === menuDay.id ? "Abierto" : "Expandir"}
+                  </span>
                 </div>
+              </summary>
 
+              <div className="mt-6">
                 <div className="flex flex-wrap gap-3">
                   <Link
                     href={
@@ -364,157 +353,141 @@ export default async function AdminMenuConfigPage({
                   >
                     {editingMenuDayId === menuDay.id ? "Cerrar edición" : "Editar"}
                   </Link>
-                  <form action={deleteMenuDay}>
-                    <input type="hidden" name="menuDayId" value={menuDay.id} />
-                    <button
-                      type="submit"
-                      className="rounded-2xl border border-[var(--danger-border)] bg-[var(--danger-soft)] px-4 py-2.5 text-sm font-medium text-[var(--danger)] transition-colors hover:bg-[rgba(220,63,97,0.14)]"
-                    >
-                      Eliminar fecha
-                    </button>
-                  </form>
-                </div>
-              </div>
-
-              {editingMenuDayId === menuDay.id ? (
-                <div className="mt-6 space-y-3">
-                  {menuDay.options.length === 0 ? (
-                    <div className="rounded-2xl border border-dashed border-border bg-background px-4 py-4 text-sm leading-6 text-muted">
-                      Esta fecha todav&iacute;a no tiene opciones configuradas.
-                    </div>
-                  ) : (
-                    menuDay.options.map((option) => (
-                      <div
-                        key={option.id}
-                        className="rounded-2xl border border-border bg-background px-4 py-4"
+                  {editingMenuDayId === menuDay.id ? (
+                    <form action={deleteMenuDay}>
+                      <input type="hidden" name="menuDayId" value={menuDay.id} />
+                      <button
+                        type="submit"
+                        className="rounded-2xl border border-[var(--danger-border)] bg-[var(--danger-soft)] px-4 py-2.5 text-sm font-medium text-[var(--danger)] transition-colors hover:bg-[rgba(220,63,97,0.14)]"
                       >
-                        <div className="flex flex-col gap-4 lg:flex-row lg:items-end">
-                          <form
-                            action={updateMenuOption}
-                            className="flex flex-1 flex-col gap-4 lg:flex-row lg:items-end"
-                          >
-                            <input type="hidden" name="optionId" value={option.id} />
-                            <input type="hidden" name="menuDayId" value={menuDay.id} />
-                            <label className="block flex-1">
-                              <span className="mb-2 block text-sm font-medium">
-                                Nombre
-                              </span>
-                              <input
-                                type="text"
-                                name="name"
-                                required
-                                defaultValue={option.name}
-                                className="w-full rounded-2xl border border-border bg-surface px-4 py-3 text-sm outline-none transition-colors focus:border-accent"
-                              />
-                            </label>
-                            <label className="block w-full lg:w-[110px]">
-                              <span className="mb-2 block text-sm font-medium">Orden</span>
-                              <input
-                                type="number"
-                                name="sortOrder"
-                                defaultValue={option.sortOrder}
-                                className="w-full rounded-2xl border border-border bg-surface px-4 py-3 text-sm outline-none transition-colors focus:border-accent"
-                              />
-                            </label>
-                            <button
-                              type="submit"
-                              className="rounded-2xl bg-foreground px-4 py-3 text-sm font-medium text-background transition-transform hover:-translate-y-0.5"
+                        Eliminar fecha
+                      </button>
+                    </form>
+                  ) : null}
+                </div>
+
+                {editingMenuDayId === menuDay.id ? (
+                  <div className="mt-6 space-y-3">
+                    {menuDay.options.length === 0 ? (
+                      <div className="rounded-2xl border border-dashed border-border bg-background px-4 py-4 text-sm leading-6 text-muted">
+                        Esta fecha todav&iacute;a no tiene opciones configuradas.
+                      </div>
+                    ) : (
+                      menuDay.options.map((option) => (
+                        <div
+                          key={option.id}
+                          className="rounded-2xl border border-border bg-background px-4 py-4"
+                        >
+                          <div className="flex flex-col gap-4 lg:flex-row lg:items-end">
+                            <form
+                              action={updateMenuOption}
+                              className="flex flex-1 flex-col gap-4 lg:flex-row lg:items-end"
                             >
-                              Guardar
-                            </button>
-                          </form>
-
-                          <div className="flex flex-wrap gap-3">
-                            <form action={toggleMenuOptionStatus}>
                               <input type="hidden" name="optionId" value={option.id} />
-                              <input
-                                type="hidden"
-                                name="nextValue"
-                                value={option.isAvailable ? "false" : "true"}
-                              />
+                              <input type="hidden" name="menuDayId" value={menuDay.id} />
+                              <label className="block flex-1">
+                                <span className="mb-2 block text-sm font-medium">
+                                  Nombre
+                                </span>
+                                <input
+                                  type="text"
+                                  name="name"
+                                  required
+                                  defaultValue={option.name}
+                                  className="w-full rounded-2xl border border-border bg-surface px-4 py-3 text-sm outline-none transition-colors focus:border-accent"
+                                />
+                              </label>
                               <button
                                 type="submit"
-                                className="rounded-2xl border border-border bg-surface px-4 py-3 text-sm font-medium transition-colors hover:bg-background"
+                                className="rounded-2xl bg-foreground px-4 py-3 text-sm font-medium text-background transition-transform hover:-translate-y-0.5"
                               >
-                                {option.isAvailable ? "Ocultar" : "Mostrar"}
+                                Guardar
                               </button>
                             </form>
 
-                            <form action={deleteMenuOption}>
-                              <input type="hidden" name="optionId" value={option.id} />
-                              <button
-                                type="submit"
-                                className="rounded-2xl border border-[var(--danger-border)] bg-[var(--danger-soft)] px-4 py-3 text-sm font-medium text-[var(--danger)] transition-colors hover:bg-[rgba(220,63,97,0.14)]"
-                              >
-                                Eliminar
-                              </button>
-                            </form>
+                            <div className="flex flex-wrap gap-3">
+                              <form action={toggleMenuOptionStatus}>
+                                <input type="hidden" name="optionId" value={option.id} />
+                                <input
+                                  type="hidden"
+                                  name="nextValue"
+                                  value={option.isAvailable ? "false" : "true"}
+                                />
+                                <button
+                                  type="submit"
+                                  className="rounded-2xl border border-border bg-surface px-4 py-3 text-sm font-medium transition-colors hover:bg-background"
+                                >
+                                  {option.isAvailable ? "Ocultar" : "Mostrar"}
+                                </button>
+                              </form>
+
+                              <form action={deleteMenuOption}>
+                                <input type="hidden" name="optionId" value={option.id} />
+                                <button
+                                  type="submit"
+                                  className="rounded-2xl border border-[var(--danger-border)] bg-[var(--danger-soft)] px-4 py-3 text-sm font-medium text-[var(--danger)] transition-colors hover:bg-[rgba(220,63,97,0.14)]"
+                                >
+                                  Eliminar
+                                </button>
+                              </form>
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    ))
-                  )}
-                </div>
-              ) : (
-                <div className="mt-4 flex flex-wrap gap-2">
-                  {menuDay.options.length === 0 ? (
-                    <span className="text-sm text-muted">
-                      Sin opciones configuradas
-                    </span>
-                  ) : (
-                    menuDay.options.map((option) => (
-                      <span
-                        key={option.id}
-                        className={`rounded-full px-3 py-1.5 text-xs font-medium ${
-                          option.isAvailable
-                            ? "border border-border bg-background text-foreground"
-                            : "border border-border bg-surface text-muted"
-                        }`}
-                      >
-                        {option.name}
+                      ))
+                    )}
+                  </div>
+                ) : (
+                  <div className="mt-4 flex flex-wrap gap-2">
+                    {menuDay.options.length === 0 ? (
+                      <span className="text-sm text-muted">
+                        Sin opciones configuradas
                       </span>
-                    ))
-                  )}
-                </div>
-              )}
+                    ) : (
+                      menuDay.options.map((option) => (
+                        <span
+                          key={option.id}
+                          className={`rounded-full px-3 py-1.5 text-xs font-medium ${
+                            option.isAvailable
+                              ? "border border-border bg-background text-foreground"
+                              : "border border-border bg-surface text-muted"
+                          }`}
+                        >
+                          {option.name}
+                        </span>
+                      ))
+                    )}
+                  </div>
+                )}
 
-              {editingMenuDayId === menuDay.id ? (
-                <div className="mt-6 rounded-[1.5rem] border border-border bg-background p-5">
-                  <h4 className="text-sm font-semibold">Agregar opci&oacute;n</h4>
-                  <form
-                    action={createMenuOption}
-                    className="mt-4 grid gap-3 lg:grid-cols-[minmax(0,1fr)_110px_auto]"
-                  >
-                    <input type="hidden" name="menuDayId" value={menuDay.id} />
-                    <label className="block">
-                      <span className="sr-only">Nombre de la opci&oacute;n</span>
-                      <input
-                        type="text"
-                        name="name"
-                        required
-                        placeholder="Ejemplo: Pollo con arroz"
-                        className="w-full rounded-2xl border border-border bg-surface px-4 py-3 text-sm outline-none transition-colors focus:border-accent"
-                      />
-                    </label>
-                    <label className="block">
-                      <span className="sr-only">Orden</span>
-                      <input
-                        type="number"
-                        name="sortOrder"
-                        defaultValue={menuDay.options.length + 1}
-                        className="w-full rounded-2xl border border-border bg-surface px-4 py-3 text-sm outline-none transition-colors focus:border-accent"
-                      />
-                    </label>
-                    <button
-                      type="submit"
-                      className="rounded-2xl bg-foreground px-5 py-3 text-sm font-medium text-background transition-transform hover:-translate-y-0.5"
+                {editingMenuDayId === menuDay.id ? (
+                  <div className="mt-6 rounded-[1.5rem] border border-border bg-background p-5">
+                    <h4 className="text-sm font-semibold">Agregar opci&oacute;n</h4>
+                    <form
+                      action={createMenuOption}
+                      className="mt-4 grid gap-3 lg:grid-cols-[minmax(0,1fr)_auto]"
                     >
-                      Agregar opci&oacute;n
-                    </button>
-                  </form>
-                </div>
-              ) : null}
-            </section>
+                      <input type="hidden" name="menuDayId" value={menuDay.id} />
+                      <label className="block">
+                        <span className="sr-only">Nombre de la opci&oacute;n</span>
+                        <input
+                          type="text"
+                          name="name"
+                          required
+                          placeholder="Ejemplo: Pollo con arroz"
+                          className="w-full rounded-2xl border border-border bg-surface px-4 py-3 text-sm outline-none transition-colors focus:border-accent"
+                        />
+                      </label>
+                      <button
+                        type="submit"
+                        className="rounded-2xl bg-foreground px-5 py-3 text-sm font-medium text-background transition-transform hover:-translate-y-0.5"
+                      >
+                        Agregar opci&oacute;n
+                      </button>
+                    </form>
+                  </div>
+                ) : null}
+              </div>
+            </details>
           ))
         )}
       </section>

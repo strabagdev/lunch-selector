@@ -31,22 +31,6 @@ type HomeFlowProps = {
   people: PersonOption[];
   todayLabel: string;
   menuDays: MenuDayItem[];
-  calendarWeekdays: string[];
-  calendarDays: Array<
-    | {
-        kind: "empty";
-        key: string;
-      }
-    | {
-        kind: "day";
-        key: string;
-        dateKey: string;
-        dayNumber: number;
-        isPast: boolean;
-        menuDayId: string | null;
-        hasOptions: boolean;
-      }
-  >;
   initialMenuDayId: string | null;
   initialPersonId: string | null;
   initialOptionId: string | null;
@@ -67,12 +51,68 @@ const STEPS = [
   { step: 4, title: "Confirmar" },
 ] as const;
 
+const COVERED_DAYS_PREVIEW_LIMIT = 6;
+const CALENDAR_WEEKDAYS = ["Lun", "Mar", "Mie", "Jue", "Vie", "Sab", "Dom"];
+
+function getMonthKey(dateKey: string) {
+  return dateKey.slice(0, 7);
+}
+
+function formatMonthLabel(monthKey: string) {
+  return new Intl.DateTimeFormat("es-CL", {
+    timeZone: "UTC",
+    month: "long",
+    year: "numeric",
+  }).format(new Date(`${monthKey}-01T00:00:00.000Z`));
+}
+
+function buildMonthCalendarDays(monthKey: string, menuDays: MenuDayItem[]) {
+  const monthStart = new Date(`${monthKey}-01T00:00:00.000Z`);
+  const monthIndex = monthStart.getUTCMonth();
+  const firstWeekday = (monthStart.getUTCDay() + 6) % 7;
+  const monthDays: Array<
+    | { kind: "empty"; key: string }
+    | {
+        kind: "day";
+        key: string;
+        dateKey: string;
+        dayNumber: number;
+        menuDayId: string | null;
+      }
+  > = [];
+  const menuDayByDateKey = new Map(menuDays.map((menuDay) => [menuDay.dateKey, menuDay]));
+
+  for (let index = 0; index < firstWeekday; index += 1) {
+    monthDays.push({
+      kind: "empty",
+      key: `${monthKey}-empty-${index}`,
+    });
+  }
+
+  const currentDate = new Date(monthStart);
+
+  while (currentDate.getUTCMonth() === monthIndex) {
+    const dateKey = currentDate.toISOString().slice(0, 10);
+    const matchingMenuDay = menuDayByDateKey.get(dateKey);
+
+    monthDays.push({
+      kind: "day",
+      key: dateKey,
+      dateKey,
+      dayNumber: currentDate.getUTCDate(),
+      menuDayId: matchingMenuDay?.id ?? null,
+    });
+
+    currentDate.setUTCDate(currentDate.getUTCDate() + 1);
+  }
+
+  return monthDays;
+}
+
 export function HomeFlow({
   people,
   todayLabel,
   menuDays,
-  calendarWeekdays,
-  calendarDays,
   initialMenuDayId,
   initialPersonId,
   initialOptionId,
@@ -96,6 +136,24 @@ export function HomeFlow({
     selectedMenuDay?.options.find((option) => option.id === selectedMenuOptionId) ?? null;
 
   const selectedPerson = people.find((person) => person.id === selectedPersonId) ?? null;
+  const nextAvailableMenuDayId = selectedPersonId
+    ? getFirstAvailableMenuDayId(menuDays, selectedPersonId)
+    : null;
+  const nextAvailableMenuDay =
+    menuDays.find((menuDay) => menuDay.id === nextAvailableMenuDayId) ?? null;
+  const monthKeys = Array.from(new Set(menuDays.map((menuDay) => getMonthKey(menuDay.dateKey))));
+  const initialCalendarMonthKey =
+    getMonthKey(
+      (
+        menuDays.find((menuDay) => menuDay.id === (initialMenuDayId ?? nextAvailableMenuDayId)) ??
+        menuDays[0]
+      )?.dateKey ?? new Date().toISOString().slice(0, 7),
+    );
+  const [currentCalendarMonthKey, setCurrentCalendarMonthKey] = useState(
+    monthKeys.includes(initialCalendarMonthKey)
+      ? initialCalendarMonthKey
+      : monthKeys[0] ?? new Date().toISOString().slice(0, 7),
+  );
   const selectedPersonCoveredDays = selectedPersonId
     ? menuDays
         .flatMap((menuDay) => {
@@ -117,12 +175,15 @@ export function HomeFlow({
           ];
         })
     : [];
-  const selectedPersonHasAnyAvailableDate = selectedPersonId
-    ? menuDays.some((menuDay) => !menuDay.selectedPersonIds.includes(selectedPersonId))
-    : false;
-  const nextAvailableMenuDayId = selectedPersonId
-    ? getFirstAvailableMenuDayId(menuDays, selectedPersonId)
-    : null;
+  const coveredDaysPreview = selectedPersonCoveredDays.slice(0, COVERED_DAYS_PREVIEW_LIMIT);
+  const remainingCoveredDaysCount = Math.max(
+    0,
+    selectedPersonCoveredDays.length - coveredDaysPreview.length,
+  );
+  const currentCalendarMonthIndex = monthKeys.findIndex(
+    (monthKey) => monthKey === currentCalendarMonthKey,
+  );
+  const currentCalendarDays = buildMonthCalendarDays(currentCalendarMonthKey, menuDays);
   const canAdvanceFromStep1 = selectedPersonId.length > 0;
   const canAdvanceFromStep2 = selectedMenuDay !== null;
   const canAdvanceFromStep3 = selectedMenuOptionId.length > 0;
@@ -132,6 +193,7 @@ export function HomeFlow({
     selectedMenuOptionId.length > 0;
   const currentProgressStep = Math.min(currentStep, 4);
   const currentStepMeta = STEPS[currentProgressStep - 1];
+  const hasNoAvailableDates = nextAvailableMenuDay === null;
 
   return (
     <>
@@ -263,10 +325,16 @@ export function HomeFlow({
                         ? initialMenuDayId
                         : getFirstAvailableMenuDayId(menuDays, nextPersonId)
                       : null;
+                    const nextMenuDay = menuDays.find(
+                      (menuDay) => menuDay.id === nextMenuDayId,
+                    );
 
                     setSelectedPersonId(nextPersonId);
                     setSelectedMenuDayId(nextMenuDayId);
                     setSelectedMenuOptionId("");
+                    if (nextMenuDay) {
+                      setCurrentCalendarMonthKey(getMonthKey(nextMenuDay.dateKey));
+                    }
                   }}
                   className="w-full rounded-[16px] border border-[color:var(--input)] bg-[var(--card)] px-4 py-3 text-sm shadow-[inset_0_1px_0_rgba(255,255,255,0.7)] outline-none transition-colors focus:border-accent"
                 >
@@ -285,13 +353,16 @@ export function HomeFlow({
             {selectedPerson ? (
               <div className="mt-5 rounded-[18px] border border-border bg-[rgba(17,32,28,0.03)] px-4 py-3">
                 {selectedPersonCoveredDays.length > 0 ? (
-                  <div className="space-y-2">
-                    <p className="text-xs leading-5 text-muted">
+                  <details className="group">
+                    <summary className="cursor-pointer list-none text-xs leading-5 text-muted">
                       Ya est&aacute;s cubierto en {selectedPersonCoveredDays.length}{" "}
                       {selectedPersonCoveredDays.length === 1 ? "fecha" : "fechas"}.
-                    </p>
-                    <div className="flex flex-col gap-1.5">
-                      {selectedPersonCoveredDays.map((coveredDay) => (
+                      <span className="ml-2 font-medium text-foreground">
+                        Ver detalle
+                      </span>
+                    </summary>
+                    <div className="mt-3 flex flex-col gap-1.5">
+                      {coveredDaysPreview.map((coveredDay) => (
                         <div
                           key={coveredDay.menuDayId}
                           className="rounded-[14px] bg-white/70 px-3 py-2"
@@ -304,8 +375,13 @@ export function HomeFlow({
                           </div>
                         </div>
                       ))}
+                      {remainingCoveredDaysCount > 0 ? (
+                        <p className="text-xs leading-5 text-muted">
+                          y {remainingCoveredDaysCount} m&aacute;s.
+                        </p>
+                      ) : null}
                     </div>
-                  </div>
+                  </details>
                 ) : (
                   <p className="text-xs leading-5 text-muted">
                     Ya puedes comenzar a registrar tus almuerzos en las fechas disponibles.
@@ -317,11 +393,9 @@ export function HomeFlow({
             <div className="mt-8 flex justify-end">
               <button
                 type="button"
-                disabled={!canAdvanceFromStep1 || !selectedPersonHasAnyAvailableDate}
+                disabled={!canAdvanceFromStep1}
                 onClick={() => setCurrentStep(2)}
-                className={`rounded-[16px] bg-[linear-gradient(180deg,var(--accent),#0a5a54)] px-5 py-3 text-sm font-medium text-white shadow-[0_14px_26px_-16px_rgba(15,23,42,0.28)] transition hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-50 ${
-                  selectedPerson && !selectedPersonHasAnyAvailableDate ? "hidden" : ""
-                }`}
+                className="rounded-[16px] bg-[linear-gradient(180deg,var(--accent),#0a5a54)] px-5 py-3 text-sm font-medium text-white shadow-[0_14px_26px_-16px_rgba(15,23,42,0.28)] transition hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 Continuar
               </button>
@@ -341,11 +415,11 @@ export function HomeFlow({
                 : "Selecciona una fecha disponible para continuar."}
             </p>
 
-            {!selectedPersonHasAnyAvailableDate ? (
+            {hasNoAvailableDates ? (
               <div className="mt-6 space-y-3">
                 <p className="text-sm leading-6 text-muted">
                   Esta persona ya registr&oacute; elecci&oacute;n en todas las fechas
-                  disponibles entre esta semana y la siguiente.
+                  futuras disponibles.
                 </p>
                 {selectedPersonCoveredDays.length > 0 ? (
                   <div className="rounded-[18px] border border-border bg-[var(--card)] px-4 py-3 shadow-[var(--shadow-soft)]">
@@ -368,86 +442,154 @@ export function HomeFlow({
                 ) : null}
               </div>
             ) : (
-              <div className="mt-6 rounded-[20px] border border-border bg-[var(--card)] px-4 py-4 shadow-[var(--shadow-soft)]">
-                <div className="mb-2 grid grid-cols-7 gap-px text-center text-[7px] font-semibold uppercase tracking-[0.05em] text-muted sm:text-[8px]">
-                  {calendarWeekdays.map((weekday) => (
-                    <div key={weekday}>{weekday}</div>
-                  ))}
-                </div>
-
-                <div className="grid grid-cols-7 gap-px">
-                  {calendarDays.map((day) => {
-                    if (day.kind === "empty") {
-                      return <div key={day.key} className="h-5 sm:h-6" />;
-                    }
-
-                    if (day.isPast) {
-                      return <div key={day.key} className="h-5 sm:h-6" />;
-                    }
-
-                    if (!day.menuDayId || !day.hasOptions) {
-                      return (
-                        <div
-                          key={day.key}
-                          className="flex h-7 w-full items-center justify-center rounded-[6px] border border-transparent bg-transparent text-[10px] font-medium leading-none text-muted sm:h-6 sm:text-[9px]"
-                        >
-                          {day.dayNumber}
-                        </div>
-                      );
-                    }
-
-                    const menuDay = menuDays.find(
-                      (availableMenuDay) => availableMenuDay.id === day.menuDayId,
-                    );
-                    const alreadySelected =
-                      menuDay?.selectedPersonIds.includes(selectedPersonId) ?? false;
-                    const isSelected = day.menuDayId === selectedMenuDayId;
-
-                    if (alreadySelected) {
-                      return (
-                        <div
-                          key={day.key}
-                          className="flex h-7 w-full items-center justify-center rounded-[6px] border border-dashed border-border bg-[var(--surface-strong)] text-[10px] font-semibold leading-none text-muted sm:h-6 sm:text-[9px]"
-                          title="Ya registraste una eleccion para esta fecha"
-                        >
-                          {day.dayNumber}
-                        </div>
-                      );
-                    }
-
-                    return (
+              <div className="mt-6 space-y-4">
+                {!selectedMenuDay && nextAvailableMenuDay ? (
+                  <div className="rounded-[18px] border border-border bg-[var(--card)] px-4 py-3 shadow-[var(--shadow-soft)]">
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                      <div>
+                        <p className="text-xs uppercase tracking-[0.12em] text-muted">
+                          Siguiente fecha pendiente
+                        </p>
+                        <p className="mt-1 text-sm font-medium text-foreground">
+                          {nextAvailableMenuDay.fullDateLabel}
+                        </p>
+                      </div>
                       <button
-                        key={day.key}
                         type="button"
                         onClick={() => {
-                          setSelectedMenuDayId(day.menuDayId);
+                          setSelectedMenuDayId(nextAvailableMenuDay.id);
                           setSelectedMenuOptionId("");
+                          setCurrentCalendarMonthKey(getMonthKey(nextAvailableMenuDay.dateKey));
                         }}
-                        className={`flex h-7 w-full items-center justify-center rounded-[6px] border text-[10px] font-semibold leading-none transition hover:-translate-y-0.5 hover:bg-[var(--surface-strong)] sm:h-6 sm:text-[9px] ${
-                          isSelected
-                            ? "border-[var(--accent-border)] bg-[var(--accent-soft)] text-[var(--accent)] shadow-[0_0_0_1px_var(--accent-border)]"
-                            : "border-border bg-white text-foreground shadow-[var(--shadow-soft)]"
-                        }`}
+                        className="rounded-[14px] border border-[var(--accent-border)] bg-[var(--accent-soft)] px-4 py-2.5 text-sm font-medium text-[var(--accent)] transition-colors hover:brightness-95"
                       >
-                        {day.dayNumber}
+                        Usar esta fecha
                       </button>
-                    );
-                  })}
-                </div>
+                    </div>
+                  </div>
+                ) : null}
 
-                <div className="mt-4 flex flex-wrap gap-3 text-[11px] text-muted">
-                  <span className="inline-flex items-center gap-2">
-                    <span className="h-2.5 w-2.5 rounded-[4px] border border-border bg-white" />
-                    Disponible
-                  </span>
-                  <span className="inline-flex items-center gap-2">
-                    <span className="h-2.5 w-2.5 rounded-[4px] border border-[var(--accent-border)] bg-[var(--accent-soft)]" />
-                    Seleccionado
-                  </span>
-                  <span className="inline-flex items-center gap-2">
-                    <span className="h-2.5 w-2.5 rounded-[4px] border border-dashed border-border bg-[var(--surface-strong)]" />
-                    Ya usado
-                  </span>
+                <div className="rounded-[20px] border border-border bg-[var(--card)] px-4 py-4 shadow-[var(--shadow-soft)]">
+                  <div className="mb-4 flex items-center justify-between gap-3">
+                    <button
+                      type="button"
+                      disabled={currentCalendarMonthIndex <= 0}
+                      onClick={() => {
+                        const previousMonthKey = monthKeys[currentCalendarMonthIndex - 1];
+
+                        if (previousMonthKey) {
+                          setCurrentCalendarMonthKey(previousMonthKey);
+                        }
+                      }}
+                      className="rounded-[12px] border border-border bg-white px-3 py-2 text-xs font-medium transition-colors hover:bg-[var(--surface-strong)] disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      Mes anterior
+                    </button>
+                    <p className="text-sm font-semibold capitalize text-foreground">
+                      {formatMonthLabel(currentCalendarMonthKey)}
+                    </p>
+                    <button
+                      type="button"
+                      disabled={
+                        currentCalendarMonthIndex === -1 ||
+                        currentCalendarMonthIndex >= monthKeys.length - 1
+                      }
+                      onClick={() => {
+                        const nextMonthKey = monthKeys[currentCalendarMonthIndex + 1];
+
+                        if (nextMonthKey) {
+                          setCurrentCalendarMonthKey(nextMonthKey);
+                        }
+                      }}
+                      className="rounded-[12px] border border-border bg-white px-3 py-2 text-xs font-medium transition-colors hover:bg-[var(--surface-strong)] disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      Mes siguiente
+                    </button>
+                  </div>
+
+                  <div className="mb-2 grid grid-cols-7 gap-px text-center text-[7px] font-semibold uppercase tracking-[0.05em] text-muted sm:text-[8px]">
+                    {CALENDAR_WEEKDAYS.map((weekday) => (
+                      <div key={weekday}>{weekday}</div>
+                    ))}
+                  </div>
+
+                  <div className="grid grid-cols-7 gap-px">
+                    {currentCalendarDays.map((day) => {
+                      if (day.kind === "empty") {
+                        return <div key={day.key} className="h-5 sm:h-6" />;
+                      }
+
+                      if (!day.menuDayId) {
+                        return (
+                          <div
+                            key={day.key}
+                            className="flex h-7 w-full items-center justify-center rounded-[6px] border border-transparent bg-transparent text-[10px] font-medium leading-none text-muted sm:h-6 sm:text-[9px]"
+                          >
+                            {day.dayNumber}
+                          </div>
+                        );
+                      }
+
+                      const menuDay = menuDays.find(
+                        (availableMenuDay) => availableMenuDay.id === day.menuDayId,
+                      );
+                      const alreadySelected =
+                        menuDay?.selectedPersonIds.includes(selectedPersonId) ?? false;
+                      const isSelected = day.menuDayId === selectedMenuDayId;
+
+                      if (alreadySelected) {
+                        return (
+                          <div
+                            key={day.key}
+                            className="flex h-7 w-full items-center justify-center rounded-[6px] border border-dashed border-border bg-[var(--surface-strong)] text-[10px] font-semibold leading-none text-muted sm:h-6 sm:text-[9px]"
+                            title="Ya registraste una eleccion para esta fecha"
+                          >
+                            {day.dayNumber}
+                          </div>
+                        );
+                      }
+
+                      return (
+                        <button
+                          key={day.key}
+                          type="button"
+                          onClick={() => {
+                            setSelectedMenuDayId(day.menuDayId);
+                            setSelectedMenuOptionId("");
+                            const clickedMenuDay = menuDays.find(
+                              (menuDay) => menuDay.id === day.menuDayId,
+                            );
+
+                            if (clickedMenuDay) {
+                              setCurrentCalendarMonthKey(getMonthKey(clickedMenuDay.dateKey));
+                            }
+                          }}
+                          className={`flex h-7 w-full items-center justify-center rounded-[6px] border text-[10px] font-semibold leading-none transition hover:-translate-y-0.5 hover:bg-[var(--surface-strong)] sm:h-6 sm:text-[9px] ${
+                            isSelected
+                              ? "border-[var(--accent-border)] bg-[var(--accent-soft)] text-[var(--accent)] shadow-[0_0_0_1px_var(--accent-border)]"
+                              : "border-border bg-white text-foreground shadow-[var(--shadow-soft)]"
+                          }`}
+                        >
+                          {day.dayNumber}
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  <div className="mt-4 flex flex-wrap gap-3 text-[11px] text-muted">
+                    <span className="inline-flex items-center gap-2">
+                      <span className="h-2.5 w-2.5 rounded-[4px] border border-border bg-white" />
+                      Disponible
+                    </span>
+                    <span className="inline-flex items-center gap-2">
+                      <span className="h-2.5 w-2.5 rounded-[4px] border border-[var(--accent-border)] bg-[var(--accent-soft)]" />
+                      Seleccionado
+                    </span>
+                    <span className="inline-flex items-center gap-2">
+                      <span className="h-2.5 w-2.5 rounded-[4px] border border-dashed border-border bg-[var(--surface-strong)]" />
+                      Ya usado
+                    </span>
+                  </div>
                 </div>
               </div>
             )}

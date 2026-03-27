@@ -54,6 +54,28 @@ npm run prisma:migrate:dev -- --name init
 npm run dev
 ```
 
+## Reporte diario por correo
+
+La app puede enviar un resumen del d&iacute;a actual con el conteo total por opci&oacute;n, incluyendo opciones con `0`.
+
+Variables requeridas:
+
+- `RESEND_API_KEY`: API key de Resend.
+- `REPORT_FROM_EMAIL`: remitente verificado en Resend.
+- `REPORT_RECIPIENTS`: correos separados por coma.
+- `REPORT_CRON_SECRET`: secreto para proteger el endpoint del cron.
+- `REPORT_TIMEZONE`: por defecto `America/Santiago`.
+
+Disparo manual:
+
+- Desde `/admin` con el bot&oacute;n `Enviar resumen de hoy`.
+
+Disparo autom&aacute;tico en Railway:
+
+- Crear un Cron Job que haga `POST` a `/api/reports/daily`.
+- Enviar header `Authorization: Bearer <REPORT_CRON_SECRET>`.
+- Configurar la hora en UTC.
+
 ## Siguiente paso sugerido
 
 Implementar acciones y formularios para administrar personas, d&iacute;as de men&uacute; y opciones usando este esquema como base.
