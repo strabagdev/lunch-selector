@@ -1,0 +1,2 @@
+ALTER TABLE "MenuDay"
+ADD COLUMN "isClosed" BOOLEAN NOT NULL DEFAULT false;

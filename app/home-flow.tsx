@@ -30,6 +30,8 @@ type MenuDayItem = {
 type HomeFlowProps = {
   people: PersonOption[];
   todayLabel: string;
+  cutoffNotice: string;
+  isTodayClosed: boolean;
   menuDays: MenuDayItem[];
   initialMenuDayId: string | null;
   initialPersonId: string | null;
@@ -112,6 +114,8 @@ function buildMonthCalendarDays(monthKey: string, menuDays: MenuDayItem[]) {
 export function HomeFlow({
   people,
   todayLabel,
+  cutoffNotice,
+  isTodayClosed,
   menuDays,
   initialMenuDayId,
   initialPersonId,
@@ -242,6 +246,25 @@ export function HomeFlow({
           </div>
         </div>
       </section>
+
+      <section className="rounded-[18px] border border-[rgba(15,118,110,0.16)] bg-[rgba(15,118,110,0.06)] px-4 py-3 text-sm font-medium text-[var(--accent)]">
+        {cutoffNotice}
+      </section>
+
+      {isTodayClosed ? (
+        <section className="rounded-[26px] border border-[rgba(220,63,97,0.16)] bg-[linear-gradient(180deg,rgba(255,255,255,0.96),rgba(255,245,247,0.96))] p-6 shadow-[var(--shadow-card)] sm:p-8">
+          <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--danger)]">
+            Solicitudes cerradas
+          </p>
+          <h2 className="mt-2 text-2xl font-semibold tracking-tight">
+            Se cerr&oacute; la toma de solicitudes para hoy.
+          </h2>
+          <p className="mt-3 text-sm leading-6 text-muted">
+            Ya no se reciben solicitudes para la fecha actual, pero puedes seguir
+            programando fechas futuras.
+          </p>
+        </section>
+      ) : null}
 
       <form action={submitSelection}>
         {selectedPersonId ? <input type="hidden" name="personId" value={selectedPersonId} /> : null}

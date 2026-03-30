@@ -76,6 +76,20 @@ Disparo autom&aacute;tico en Railway:
 - Enviar header `Authorization: Bearer <REPORT_CRON_SECRET>`.
 - Configurar la hora en UTC.
 
+## PWA
+
+La app incluye una configuraci&oacute;n base de PWA para poder instalarse en el celular:
+
+- `app/manifest.ts`: manifiesto web.
+- `app/icon.tsx` y `app/apple-icon.tsx`: iconos generados por Next.
+- `public/sw.js`: service worker b&aacute;sico.
+- `app/pwa-provider.tsx`: registro del service worker en cliente.
+
+Para probar la instalaci&oacute;n:
+
+- abrir la app desde el navegador del celular
+- usar `Agregar a pantalla de inicio` o el prompt de instalaci&oacute;n del navegador
+
 ## Siguiente paso sugerido
 
 Implementar acciones y formularios para administrar personas, d&iacute;as de men&uacute; y opciones usando este esquema como base.

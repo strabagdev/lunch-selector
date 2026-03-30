@@ -22,6 +22,7 @@ model Person {
 model MenuDay {
   id         String           @id @default(cuid())
   date       DateTime         @db.Date
+  isClosed   Boolean          @default(false)
   createdAt  DateTime         @default(now())
   updatedAt  DateTime         @updatedAt
   options    MenuOption[]

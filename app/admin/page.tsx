@@ -4,7 +4,6 @@ import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import ConfirmSubmitButton from "@/app/admin/confirm-submit-button";
 import { getDailyReportConfigStatus } from "@/lib/daily-report";
-import { sendDailyReportEmail } from "@/lib/report-email";
 
 export const dynamic = "force-dynamic";
 
@@ -65,21 +64,34 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
   async function sendManualDailyReport() {
     "use server";
 
-    let nextReportStatus = "error";
+    let nextReportStatus = "close-error";
 
     try {
-      const result = await sendDailyReportEmail();
+      const todayMenuDay = await prisma.menuDay.findUnique({
+        where: { date: todayDate },
+        select: {
+          id: true,
+          isClosed: true,
+        },
+      });
 
-      if (result.status === "sent") {
-        nextReportStatus = "sent";
-      } else if (result.status === "skipped") {
-        nextReportStatus =
-          result.reason === "no_available_options" ? "no-options" : "no-menu";
-      } else if (result.status === "not_configured") {
-        nextReportStatus = "not-configured";
+      if (!todayMenuDay) {
+        nextReportStatus = "no-menu";
+      } else if (todayMenuDay.isClosed) {
+        nextReportStatus = "already-closed";
+      } else {
+        await prisma.menuDay.update({
+          where: { id: todayMenuDay.id },
+          data: { isClosed: true },
+          select: { id: true },
+        });
+
+        revalidatePath("/");
+        revalidatePath("/admin");
+        nextReportStatus = "closed";
       }
     } catch (error) {
-      console.error("Manual daily report failed", error);
+      console.error("Close daily requests failed", error);
     }
 
     const nextParams = new URLSearchParams();
@@ -110,33 +122,43 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
     revalidatePath("/");
   }
 
-  const menuDays = await prisma.menuDay.findMany({
-    where: {
-      date: {
-        gte: todayDate,
+  const [todayMenuDayStatus, menuDays] = await Promise.all([
+    prisma.menuDay.findUnique({
+      where: { date: todayDate },
+      select: {
+        id: true,
+        isClosed: true,
       },
-      options: {
-        some: {
-          isAvailable: true,
+    }),
+    prisma.menuDay.findMany({
+      where: {
+        date: {
+          gte: todayDate,
+        },
+        options: {
+          some: {
+            isAvailable: true,
+          },
         },
       },
-    },
-    orderBy: { date: "asc" },
-    select: {
-      id: true,
-      date: true,
-      _count: {
-        select: {
-          selections: true,
-          options: {
-            where: {
-              isAvailable: true,
+      orderBy: { date: "asc" },
+      select: {
+        id: true,
+        date: true,
+        isClosed: true,
+        _count: {
+          select: {
+            selections: true,
+            options: {
+              where: {
+                isAvailable: true,
+              },
             },
           },
         },
       },
-    },
-  });
+    }),
+  ]);
 
   const selectedMenuDaySummary =
     menuDays.find((menuDay) => menuDay.id === requestedMenuDayId) ??
@@ -145,6 +167,7 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
     ) ??
     menuDays[0] ??
     null;
+  const isTodayClosed = todayMenuDayStatus?.isClosed ?? false;
 
   const menuDay = selectedMenuDaySummary
     ? await prisma.menuDay.findUnique({
@@ -206,11 +229,15 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
               Reporte diario
             </p>
             <h2 className="text-2xl font-semibold tracking-tight">
-              Envio de conteo por correo
+              Cierre diario
             </h2>
             <p className="text-sm leading-6 text-muted">
-              Env&iacute;a el resumen de hoy con el conteo total por opci&oacute;n,
-              incluyendo las opciones en 0.
+              Por ahora este bot&oacute;n cierra la toma de solicitudes del d&iacute;a
+              actual. M&aacute;s adelante disparar&aacute; tambi&eacute;n el env&iacute;o
+              del correo resumen.
+            </p>
+            <p className="text-xs leading-5 text-muted">
+              Estado de hoy: {isTodayClosed ? "cerrado" : "abierto"}.
             </p>
             {dailyReportConfig.recipients.length > 0 ? (
               <p className="text-xs leading-5 text-muted">
@@ -222,52 +249,36 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
           <form action={sendManualDailyReport}>
             <button
               type="submit"
-              disabled={!dailyReportConfig.isReady}
+              disabled={isTodayClosed}
               className="rounded-[16px] bg-[linear-gradient(180deg,var(--accent),#0a5a54)] px-5 py-3 text-sm font-medium text-white shadow-[0_14px_26px_-16px_rgba(15,23,42,0.28)] transition hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-50"
             >
-              Enviar resumen de hoy
+              Cerrar solicitudes de hoy
             </button>
           </form>
         </div>
 
-        {reportStatus === "sent" ? (
+        {reportStatus === "closed" ? (
           <div className="mt-4 rounded-[18px] border border-[rgba(15,118,110,0.18)] bg-[rgba(15,118,110,0.06)] px-4 py-3 text-sm text-[var(--accent)]">
-            El resumen diario fue enviado correctamente.
+            La toma de solicitudes para hoy fue cerrada correctamente.
+          </div>
+        ) : null}
+
+        {reportStatus === "already-closed" ? (
+          <div className="mt-4 rounded-[18px] border border-border bg-background px-4 py-3 text-sm text-muted">
+            Las solicitudes de hoy ya estaban cerradas.
           </div>
         ) : null}
 
         {reportStatus === "no-menu" ? (
           <div className="mt-4 rounded-[18px] border border-border bg-background px-4 py-3 text-sm text-muted">
-            Hoy no hay un men&uacute; configurado con opciones disponibles, as&iacute;
-            que no se envi&oacute; correo.
+            Hoy no hay un men&uacute; configurado para cerrar solicitudes.
           </div>
         ) : null}
 
-        {reportStatus === "no-options" ? (
-          <div className="mt-4 rounded-[18px] border border-border bg-background px-4 py-3 text-sm text-muted">
-            Hoy no hay opciones disponibles para incluir en el reporte.
-          </div>
-        ) : null}
-
-        {reportStatus === "not-configured" ? (
+        {reportStatus === "close-error" ? (
           <div className="mt-4 rounded-[18px] border border-[rgba(220,63,97,0.16)] bg-[rgba(220,63,97,0.06)] px-4 py-3 text-sm text-[var(--danger)]">
-            Faltan variables de entorno para habilitar el reporte:{" "}
-            {dailyReportConfig.missing.join(", ")}.
+            No se pudieron cerrar las solicitudes de hoy. Revisa los logs del despliegue.
           </div>
-        ) : null}
-
-        {reportStatus === "error" ? (
-          <div className="mt-4 rounded-[18px] border border-[rgba(220,63,97,0.16)] bg-[rgba(220,63,97,0.06)] px-4 py-3 text-sm text-[var(--danger)]">
-            No se pudo enviar el reporte diario. Revisa los logs del despliegue y la
-            configuraci&oacute;n de correo.
-          </div>
-        ) : null}
-
-        {!dailyReportConfig.isReady ? (
-          <p className="mt-4 text-xs leading-5 text-muted">
-            Para activar el env&iacute;o manual y autom&aacute;tico faltan:{" "}
-            {dailyReportConfig.missing.join(", ")}.
-          </p>
         ) : null}
       </section>
 

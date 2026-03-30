@@ -5,6 +5,7 @@ import { HomeFlow } from "./home-flow";
 import { QrLauncher } from "./qr-launcher";
 
 export const dynamic = "force-dynamic";
+const CUTOFF_NOTICE = "Hora de corte 09:00 AM";
 
 type HomePageProps = {
   searchParams: Promise<{
@@ -81,6 +82,7 @@ export default async function Home({ searchParams }: HomePageProps) {
       select: {
         id: true,
         date: true,
+        isClosed: true,
         options: {
           where: { isAvailable: true },
           orderBy: [{ sortOrder: "asc" }, { name: "asc" }],
@@ -106,8 +108,14 @@ export default async function Home({ searchParams }: HomePageProps) {
   ]);
 
   const selectableMenuDays = availableMenuDays.filter(
-    (availableMenuDay) => availableMenuDay.options.length > 0,
+    (availableMenuDay) =>
+      availableMenuDay.options.length > 0 &&
+      !(getDateKey(availableMenuDay.date) === todayKey && availableMenuDay.isClosed),
   );
+  const todayMenuDay =
+    availableMenuDays.find((availableMenuDay) => getDateKey(availableMenuDay.date) === todayKey) ??
+    null;
+  const isTodayClosed = todayMenuDay?.isClosed ?? false;
 
   const requestedMenuDaySummary =
     selectableMenuDays.find((menuDay) => menuDay.id === requestedMenuDayId) ?? null;
@@ -152,7 +160,8 @@ export default async function Home({ searchParams }: HomePageProps) {
       !person?.isActive ||
       !selectedMenuDay ||
       !option ||
-      getDateKey(selectedMenuDay.date) < todayKey
+      getDateKey(selectedMenuDay.date) < todayKey ||
+      (getDateKey(selectedMenuDay.date) === todayKey && isTodayClosed)
     ) {
       return;
     }
@@ -191,6 +200,8 @@ export default async function Home({ searchParams }: HomePageProps) {
         <HomeFlow
           people={people}
           todayLabel={todayLabel}
+          cutoffNotice={CUTOFF_NOTICE}
+          isTodayClosed={isTodayClosed}
           menuDays={selectableMenuDays.map((menuDay) => {
             const selectionCountByOption = new Map(
               menuDay.options.map((option) => [option.id, 0]),
