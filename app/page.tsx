@@ -197,7 +197,7 @@ export default async function Home({ searchParams }: HomePageProps) {
   return (
     <>
       <QrLauncher shareUrl={shareUrl} />
-      <main className="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-8 px-6 py-10 sm:px-10">
+      <main className="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-6 px-4 py-6 sm:gap-8 sm:px-8 sm:py-10 lg:px-10">
         <HomeFlow
           people={people}
           todayLabel={todayLabel}

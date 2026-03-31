@@ -59,7 +59,7 @@ export default async function AdminAccessPage({
   }
 
   return (
-    <main className="mx-auto flex min-h-full w-full max-w-md flex-1 flex-col justify-center px-6 py-10">
+    <main className="mx-auto flex min-h-full w-full max-w-md flex-1 flex-col justify-center px-4 py-6 sm:px-6 sm:py-10">
       <section className="rounded-[2rem] border border-border bg-surface p-6 sm:p-8">
         <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-accent">
           Acceso privado
@@ -80,7 +80,7 @@ export default async function AdminAccessPage({
               type="password"
               name="password"
               required
-              className="w-full rounded-2xl border border-border bg-background px-4 py-3 text-sm outline-none transition-colors focus:border-accent"
+              className="w-full rounded-2xl border border-border bg-background px-4 py-3 text-base outline-none transition-colors focus:border-accent sm:text-sm"
             />
           </label>
 

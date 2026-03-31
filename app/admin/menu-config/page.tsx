@@ -288,7 +288,7 @@ export default async function AdminMenuConfigPage({
               type="date"
               name="date"
               required
-              className="w-full rounded-2xl border border-border bg-background px-4 py-3 text-sm outline-none transition-colors focus:border-accent"
+              className="w-full rounded-2xl border border-border bg-background px-4 py-3 text-base outline-none transition-colors focus:border-accent sm:text-sm"
             />
           </label>
 
@@ -302,7 +302,7 @@ export default async function AdminMenuConfigPage({
                     type="text"
                     name="optionName"
                     placeholder={`Menú ${item}`}
-                    className="w-full rounded-2xl border border-border bg-background px-4 py-3 text-sm outline-none transition-colors focus:border-accent"
+                    className="w-full rounded-2xl border border-border bg-background px-4 py-3 text-base outline-none transition-colors focus:border-accent sm:text-sm"
                   />
                 </label>
               </div>
@@ -394,7 +394,7 @@ export default async function AdminMenuConfigPage({
                                   name="name"
                                   required
                                   defaultValue={option.name}
-                                  className="w-full rounded-2xl border border-border bg-surface px-4 py-3 text-sm outline-none transition-colors focus:border-accent"
+                                  className="w-full rounded-2xl border border-border bg-surface px-4 py-3 text-base outline-none transition-colors focus:border-accent sm:text-sm"
                                 />
                               </label>
                               <button
@@ -474,7 +474,7 @@ export default async function AdminMenuConfigPage({
                           name="name"
                           required
                           placeholder="Ejemplo: Pollo con arroz"
-                          className="w-full rounded-2xl border border-border bg-surface px-4 py-3 text-sm outline-none transition-colors focus:border-accent"
+                          className="w-full rounded-2xl border border-border bg-surface px-4 py-3 text-base outline-none transition-colors focus:border-accent sm:text-sm"
                         />
                       </label>
                       <button

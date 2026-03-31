@@ -246,11 +246,11 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
             ) : null}
           </div>
 
-          <form action={sendManualDailyReport}>
+          <form action={sendManualDailyReport} className="w-full sm:w-auto">
             <button
               type="submit"
               disabled={isTodayClosed}
-              className="rounded-[16px] bg-[linear-gradient(180deg,var(--accent),#0a5a54)] px-5 py-3 text-sm font-medium text-white shadow-[0_14px_26px_-16px_rgba(15,23,42,0.28)] transition hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-50"
+              className="w-full rounded-[16px] bg-[linear-gradient(180deg,var(--accent),#0a5a54)] px-5 py-3 text-sm font-medium text-white shadow-[0_14px_26px_-16px_rgba(15,23,42,0.28)] transition hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto"
             >
               Cerrar solicitudes de hoy
             </button>
@@ -288,7 +288,7 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
             A&uacute;n no hay d&iacute;as de men&uacute; con opciones cargadas.
           </div>
         ) : (
-          <div className="flex flex-wrap gap-2.5">
+          <div className="grid grid-cols-2 gap-2.5 sm:flex sm:flex-wrap">
             {menuDays.map((availableMenuDay) => {
               const isSelected = availableMenuDay.id === menuDay?.id;
 
@@ -296,7 +296,7 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
                 <Link
                   key={availableMenuDay.id}
                   href={`/admin?menuDay=${availableMenuDay.id}`}
-                  className={`min-w-[76px] rounded-[16px] border px-3 py-2 text-sm transition-colors ${
+                  className={`min-w-0 rounded-[16px] border px-3 py-2 text-sm transition-colors sm:min-w-[76px] ${
                     isSelected
                       ? "border-[var(--accent-border)] bg-[var(--accent-soft)] text-[var(--accent)] shadow-[0_0_0_1px_var(--accent-border)]"
                       : "border-border bg-[var(--card)] text-foreground hover:bg-[var(--surface-strong)]"
@@ -335,7 +335,7 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
               </p>
             </div>
 
-            <div className="mt-6 grid grid-cols-3 gap-2 sm:gap-4">
+            <div className="mt-6 grid grid-cols-2 gap-2 sm:grid-cols-3 sm:gap-4">
               {menuDay.options.map((option, index) => (
                 <div
                   key={option.id}

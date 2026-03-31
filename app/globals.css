@@ -44,6 +44,8 @@ html {
   background:
     radial-gradient(circle at top, rgba(15, 118, 110, 0.1), transparent 30%),
     var(--background);
+  overflow-x: hidden;
+  -webkit-text-size-adjust: 100%;
 }
 
 body {
@@ -52,6 +54,7 @@ body {
     var(--background);
   color: var(--foreground);
   font-family: "Segoe UI", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  overflow-x: hidden;
 }
 
 a {

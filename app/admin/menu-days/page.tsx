@@ -180,7 +180,42 @@ export default async function AdminMenuDaysPage({
                 No hay d&iacute;as hist&oacute;ricos registrados en este mes.
               </div>
             ) : (
-              <div className="overflow-x-auto">
+              <>
+                <div className="space-y-4 sm:hidden">
+                  {pastMenuDays.map((menuDay) => (
+                    <article
+                      key={menuDay.id}
+                      className="rounded-[20px] border border-border bg-background px-4 py-4"
+                    >
+                      <h3 className="text-sm font-semibold leading-5 text-foreground">
+                        {formatMenuDate(menuDay.date)}
+                      </h3>
+                      <p className="mt-2 text-xs font-medium uppercase tracking-[0.12em] text-muted">
+                        Total pedidos: {menuDay.selections.length}
+                      </p>
+
+                      <div className="mt-4 space-y-2">
+                        {menuDay.options.map((option) => {
+                          const selectionCount = menuDay.selections.filter(
+                            (selection) => selection.menuOptionId === option.id,
+                          ).length;
+
+                          return (
+                            <div
+                              key={option.id}
+                              className="flex items-center justify-between gap-3 rounded-[14px] border border-border bg-white px-3 py-2 text-sm"
+                            >
+                              <span className="min-w-0 flex-1">{option.name}</span>
+                              <span className="font-medium text-muted">{selectionCount}</span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </article>
+                  ))}
+                </div>
+
+                <div className="hidden overflow-x-auto sm:block">
                 <table className="min-w-full border-separate border-spacing-0">
                   <thead>
                     <tr className="text-left text-[11px] uppercase tracking-[0.14em] text-muted">
@@ -227,7 +262,8 @@ export default async function AdminMenuDaysPage({
                     ))}
                   </tbody>
                 </table>
-              </div>
+                </div>
+              </>
             )}
           </div>
         )}

@@ -238,7 +238,7 @@ export function HomeFlow({
               <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-accent">
                 Seleccion diaria
               </p>
-              <h1 className="whitespace-nowrap text-[1.65rem] font-semibold leading-none tracking-tight sm:text-4xl xl:text-[2.35rem]">
+              <h1 className="text-[1.5rem] font-semibold leading-tight tracking-tight sm:text-4xl xl:text-[2.35rem]">
                 Registro de almuerzo
               </h1>
             </div>
@@ -385,7 +385,7 @@ export function HomeFlow({
                       setCurrentCalendarMonthKey(getMonthKey(nextMenuDay.dateKey));
                     }
                   }}
-                  className="w-full rounded-[16px] border border-[color:var(--input)] bg-[var(--card)] px-4 py-3 text-sm shadow-[inset_0_1px_0_rgba(255,255,255,0.7)] outline-none transition-colors focus:border-accent"
+                  className="w-full rounded-[16px] border border-[color:var(--input)] bg-[var(--card)] px-4 py-3 text-base shadow-[inset_0_1px_0_rgba(255,255,255,0.7)] outline-none transition-colors focus:border-accent sm:text-sm"
                 >
                   <option value="" disabled>
                     Selecciona tu nombre
@@ -439,12 +439,12 @@ export function HomeFlow({
               </div>
             ) : null}
 
-            <div className="mt-8 flex justify-end">
+            <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:justify-end">
               <button
                 type="button"
                 disabled={!canAdvanceFromStep1}
                 onClick={() => setCurrentStep(2)}
-                className="rounded-[16px] bg-[linear-gradient(180deg,var(--accent),#0a5a54)] px-5 py-3 text-sm font-medium text-white shadow-[0_14px_26px_-16px_rgba(15,23,42,0.28)] transition hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-50"
+                className="w-full rounded-[16px] bg-[linear-gradient(180deg,var(--accent),#0a5a54)] px-5 py-3 text-sm font-medium text-white shadow-[0_14px_26px_-16px_rgba(15,23,42,0.28)] transition hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto"
               >
                 Continuar
               </button>
@@ -643,11 +643,11 @@ export function HomeFlow({
               </div>
             )}
 
-            <div className="mt-8 flex justify-between gap-3">
+            <div className="mt-8 flex flex-col-reverse gap-3 sm:flex-row sm:justify-between">
               <button
                 type="button"
                 onClick={() => setCurrentStep(1)}
-                className="rounded-[16px] border border-[color:var(--border-strong)] bg-[var(--card)] px-5 py-3 text-sm font-medium transition-colors hover:bg-[var(--surface-strong)]"
+                className="w-full rounded-[16px] border border-[color:var(--border-strong)] bg-[var(--card)] px-5 py-3 text-sm font-medium transition-colors hover:bg-[var(--surface-strong)] sm:w-auto"
               >
                 Volver
               </button>
@@ -655,7 +655,7 @@ export function HomeFlow({
                 type="button"
                 disabled={!canAdvanceFromStep2}
                 onClick={() => setCurrentStep(3)}
-                className="rounded-[16px] bg-[linear-gradient(180deg,var(--accent),#0a5a54)] px-5 py-3 text-sm font-medium text-white shadow-[0_14px_26px_-16px_rgba(15,23,42,0.28)] transition hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-50"
+                className="w-full rounded-[16px] bg-[linear-gradient(180deg,var(--accent),#0a5a54)] px-5 py-3 text-sm font-medium text-white shadow-[0_14px_26px_-16px_rgba(15,23,42,0.28)] transition hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto"
               >
                 Continuar
               </button>
@@ -706,11 +706,11 @@ export function HomeFlow({
               </div>
             ) : null}
 
-            <div className="mt-8 flex justify-between gap-3">
+            <div className="mt-8 flex flex-col-reverse gap-3 sm:flex-row sm:justify-between">
               <button
                 type="button"
                 onClick={() => setCurrentStep(2)}
-                className="rounded-[16px] border border-[color:var(--border-strong)] bg-[var(--card)] px-5 py-3 text-sm font-medium transition-colors hover:bg-[var(--surface-strong)]"
+                className="w-full rounded-[16px] border border-[color:var(--border-strong)] bg-[var(--card)] px-5 py-3 text-sm font-medium transition-colors hover:bg-[var(--surface-strong)] sm:w-auto"
               >
                 Volver
               </button>
@@ -718,7 +718,7 @@ export function HomeFlow({
                 type="button"
                 disabled={!canAdvanceFromStep3}
                 onClick={() => setCurrentStep(4)}
-                className="rounded-[16px] bg-[linear-gradient(180deg,var(--accent),#0a5a54)] px-5 py-3 text-sm font-medium text-white shadow-[0_14px_26px_-16px_rgba(15,23,42,0.28)] transition hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-50"
+                className="w-full rounded-[16px] bg-[linear-gradient(180deg,var(--accent),#0a5a54)] px-5 py-3 text-sm font-medium text-white shadow-[0_14px_26px_-16px_rgba(15,23,42,0.28)] transition hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto"
               >
                 Continuar
               </button>
@@ -754,18 +754,18 @@ export function HomeFlow({
               </div>
             </div>
 
-            <div className="mt-8 flex justify-between gap-3">
+            <div className="mt-8 flex flex-col-reverse gap-3 sm:flex-row sm:justify-between">
               <button
                 type="button"
                 onClick={() => setCurrentStep(3)}
-                className="rounded-[16px] border border-[color:var(--border-strong)] bg-[var(--card)] px-5 py-3 text-sm font-medium transition-colors hover:bg-[var(--surface-strong)]"
+                className="w-full rounded-[16px] border border-[color:var(--border-strong)] bg-[var(--card)] px-5 py-3 text-sm font-medium transition-colors hover:bg-[var(--surface-strong)] sm:w-auto"
               >
                 Volver
               </button>
               <button
                 type="submit"
                 disabled={!canSubmit}
-                className="rounded-[16px] bg-[linear-gradient(180deg,var(--accent),#0a5a54)] px-5 py-3 text-sm font-medium text-white shadow-[0_14px_26px_-16px_rgba(15,23,42,0.28)] transition hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-50"
+                className="w-full rounded-[16px] bg-[linear-gradient(180deg,var(--accent),#0a5a54)] px-5 py-3 text-sm font-medium text-white shadow-[0_14px_26px_-16px_rgba(15,23,42,0.28)] transition hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto"
               >
                 Confirmar seleccion
               </button>

@@ -59,7 +59,7 @@ export function PersonRow({
                   }
                 }}
                 onFocus={() => setIsEditing(true)}
-                className="h-11 w-full rounded-[16px] border border-[var(--accent-border)] bg-white px-4 text-sm font-medium shadow-[inset_0_1px_0_rgba(255,255,255,0.75)] outline-none transition-colors"
+                className="h-11 w-full rounded-[16px] border border-[var(--accent-border)] bg-white px-4 text-base font-medium shadow-[inset_0_1px_0_rgba(255,255,255,0.75)] outline-none transition-colors sm:text-sm"
               />
             ) : (
               <div className="flex min-h-[44px] items-center rounded-[16px] border border-transparent bg-transparent px-1">

@@ -113,7 +113,7 @@ export default async function AdminPeoplePage() {
               name="name"
               required
               placeholder="Ejemplo: Daniela Soto"
-              className="w-full rounded-2xl border border-border bg-background px-4 py-3 text-sm outline-none transition-colors focus:border-accent"
+              className="w-full rounded-2xl border border-border bg-background px-4 py-3 text-base outline-none transition-colors focus:border-accent sm:text-sm"
             />
           </label>
           <button
