@@ -30,6 +30,7 @@ type MenuDayItem = {
 type HomeFlowProps = {
   people: PersonOption[];
   todayLabel: string;
+  todayMonthKey: string;
   cutoffNotice: string;
   isTodayClosed: boolean;
   menuDays: MenuDayItem[];
@@ -114,6 +115,7 @@ function buildMonthCalendarDays(monthKey: string, menuDays: MenuDayItem[]) {
 export function HomeFlow({
   people,
   todayLabel,
+  todayMonthKey,
   cutoffNotice,
   isTodayClosed,
   menuDays,
@@ -133,6 +135,7 @@ export function HomeFlow({
   const [selectedMenuOptionId, setSelectedMenuOptionId] = useState(
     initialSuccess ? initialOptionId ?? "" : "",
   );
+  const [isCutoffNoticeDismissed, setIsCutoffNoticeDismissed] = useState(false);
 
   const selectedMenuDay =
     menuDays.find((menuDay) => menuDay.id === selectedMenuDayId) ?? null;
@@ -151,12 +154,12 @@ export function HomeFlow({
       (
         menuDays.find((menuDay) => menuDay.id === (initialMenuDayId ?? nextAvailableMenuDayId)) ??
         menuDays[0]
-      )?.dateKey ?? new Date().toISOString().slice(0, 7),
+      )?.dateKey ?? todayMonthKey,
     );
   const [currentCalendarMonthKey, setCurrentCalendarMonthKey] = useState(
     monthKeys.includes(initialCalendarMonthKey)
       ? initialCalendarMonthKey
-      : monthKeys[0] ?? new Date().toISOString().slice(0, 7),
+      : monthKeys[0] ?? todayMonthKey,
   );
   const selectedPersonCoveredDays = selectedPersonId
     ? menuDays
@@ -201,6 +204,33 @@ export function HomeFlow({
 
   return (
     <>
+      {currentStep === 1 && !isCutoffNoticeDismissed ? (
+        <section className="rounded-[18px] border border-[rgba(220,63,97,0.18)] bg-[rgba(220,63,97,0.08)] px-4 py-3 text-sm font-medium text-[var(--danger)] shadow-[var(--shadow-soft)]">
+          <div className="flex items-start justify-between gap-3">
+            <p className="leading-5">{cutoffNotice}</p>
+            <button
+              type="button"
+              onClick={() => setIsCutoffNoticeDismissed(true)}
+              className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-[rgba(220,63,97,0.14)] bg-white/70 text-[var(--danger)] shadow-[0_8px_18px_-14px_rgba(127,29,29,0.45)] transition-all hover:-translate-y-px hover:bg-white hover:shadow-[0_12px_22px_-14px_rgba(127,29,29,0.5)]"
+              aria-label="Cerrar aviso"
+            >
+              <svg
+                aria-hidden="true"
+                viewBox="0 0 16 16"
+                className="h-3.5 w-3.5"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.8"
+                strokeLinecap="round"
+              >
+                <path d="M4 4L12 12" />
+                <path d="M12 4L4 12" />
+              </svg>
+            </button>
+          </div>
+        </section>
+      ) : null}
+
       <section className="rounded-[26px] border border-border bg-[radial-gradient(circle_at_top_left,rgba(15,118,110,0.12),transparent_28%),linear-gradient(180deg,rgba(255,255,255,0.96),rgba(245,249,248,0.92))] p-6 shadow-[var(--shadow-card)] sm:p-8">
         <div className="space-y-4">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
@@ -245,10 +275,6 @@ export function HomeFlow({
             </div>
           </div>
         </div>
-      </section>
-
-      <section className="rounded-[18px] border border-[rgba(15,118,110,0.16)] bg-[rgba(15,118,110,0.06)] px-4 py-3 text-sm font-medium text-[var(--accent)]">
-        {cutoffNotice}
       </section>
 
       {isTodayClosed ? (

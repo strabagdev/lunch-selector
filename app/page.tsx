@@ -60,6 +60,7 @@ export default async function Home({ searchParams }: HomePageProps) {
   const initialPersonId = getMenuDayParam(resolvedSearchParams.person);
   const initialOptionId = getMenuDayParam(resolvedSearchParams.option);
   const todayKey = getTodayKey();
+  const todayMonthKey = todayKey.slice(0, 7);
   const todayDate = new Date(`${todayKey}T00:00:00.000Z`);
   const todayLabel = formatMenuDate(todayDate);
 
@@ -200,6 +201,7 @@ export default async function Home({ searchParams }: HomePageProps) {
         <HomeFlow
           people={people}
           todayLabel={todayLabel}
+          todayMonthKey={todayMonthKey}
           cutoffNotice={CUTOFF_NOTICE}
           isTodayClosed={isTodayClosed}
           menuDays={selectableMenuDays.map((menuDay) => {
