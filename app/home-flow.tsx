@@ -61,17 +61,30 @@ const STEPS = [
 
 const COVERED_DAYS_PREVIEW_LIMIT = 6;
 const CALENDAR_WEEKDAYS = ["Lun", "Mar", "Mie", "Jue", "Vie", "Sab", "Dom"];
+const CALENDAR_MONTHS = [
+  "enero",
+  "febrero",
+  "marzo",
+  "abril",
+  "mayo",
+  "junio",
+  "julio",
+  "agosto",
+  "septiembre",
+  "octubre",
+  "noviembre",
+  "diciembre",
+];
 
 function getMonthKey(dateKey: string) {
   return dateKey.slice(0, 7);
 }
 
 function formatMonthLabel(monthKey: string) {
-  return new Intl.DateTimeFormat("es-CL", {
-    timeZone: "UTC",
-    month: "long",
-    year: "numeric",
-  }).format(new Date(`${monthKey}-01T00:00:00.000Z`));
+  const [year, month] = monthKey.split("-");
+  const monthIndex = Number(month) - 1;
+  const monthLabel = CALENDAR_MONTHS[monthIndex] ?? monthKey;
+  return `${monthLabel} ${year}`;
 }
 
 function buildMonthCalendarDays(monthKey: string, menuDays: MenuDayItem[]) {
@@ -143,17 +156,26 @@ export function HomeFlow({
     initialSuccess ? initialOptionId ?? "" : "",
   );
   const [isCutoffNoticeDismissed, setIsCutoffNoticeDismissed] = useState(false);
+  const [cutoffNoticeProgress, setCutoffNoticeProgress] = useState(100);
 
   useEffect(() => {
     if (currentStep !== 1 || isCutoffNoticeDismissed) {
       return;
     }
 
+    const startedAt = Date.now();
+    const intervalId = window.setInterval(() => {
+      const elapsed = Date.now() - startedAt;
+      const nextProgress = Math.max(0, 100 - elapsed / 300);
+      setCutoffNoticeProgress(nextProgress);
+    }, 100);
+
     const timeoutId = window.setTimeout(() => {
       setIsCutoffNoticeDismissed(true);
     }, 30_000);
 
     return () => {
+      window.clearInterval(intervalId);
       window.clearTimeout(timeoutId);
     };
   }, [currentStep, isCutoffNoticeDismissed]);
@@ -261,7 +283,7 @@ export function HomeFlow({
 
       {currentStep === 1 && !isCutoffNoticeDismissed ? (
         <section className="rounded-[18px] border border-[rgba(220,63,97,0.18)] bg-[rgba(220,63,97,0.08)] px-4 py-3 text-sm font-medium text-[var(--danger)] shadow-[var(--shadow-soft)]">
-          <div className="flex items-center justify-between gap-3">
+          <div className="flex items-center justify-center gap-3 text-center">
             <div className="flex flex-1 items-center justify-center gap-3 text-center">
               <span
                 aria-hidden="true"
@@ -284,25 +306,12 @@ export function HomeFlow({
                 {cutoffNotice}
               </p>
             </div>
-            <button
-              type="button"
-              onClick={() => setIsCutoffNoticeDismissed(true)}
-              className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-[rgba(220,63,97,0.14)] bg-white/70 text-[var(--danger)] shadow-[0_8px_18px_-14px_rgba(127,29,29,0.45)] transition-all hover:-translate-y-px hover:bg-white hover:shadow-[0_12px_22px_-14px_rgba(127,29,29,0.5)]"
-              aria-label="Cerrar aviso"
-            >
-              <svg
-                aria-hidden="true"
-                viewBox="0 0 16 16"
-                className="h-3.5 w-3.5"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="1.8"
-                strokeLinecap="round"
-              >
-                <path d="M4 4L12 12" />
-                <path d="M12 4L4 12" />
-              </svg>
-            </button>
+          </div>
+          <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-[rgba(220,63,97,0.16)]">
+            <div
+              className="h-full rounded-full bg-[linear-gradient(90deg,rgba(220,63,97,0.92),rgba(246,114,128,0.86))] transition-[width] duration-100"
+              style={{ width: `${cutoffNoticeProgress}%` }}
+            />
           </div>
         </section>
       ) : null}

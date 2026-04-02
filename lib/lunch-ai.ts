@@ -177,23 +177,18 @@ export async function getOrCreateHomeMenuNarrative(
       ).homeMenuNarrative
     : undefined;
 
-  let narrative = {
-    text: buildHomeMenuNarrativeFallback(input),
-    model: null as string | null,
-  };
-
-  try {
-    const generatedNarrative = await generateHomeMenuNarrative(input);
-
-    if (generatedNarrative) {
-      narrative = generatedNarrative;
-    }
-  } catch (error) {
-    console.error("Home menu AI narrative failed", error);
-  }
-
   if (!cacheEnabled || !narrativeStore) {
-    return narrative;
+    const generatedNarrative = await generateHomeMenuNarrative(input).catch((error) => {
+      console.error("Home menu AI narrative failed", error);
+      return null;
+    });
+
+    return (
+      generatedNarrative ?? {
+        text: buildHomeMenuNarrativeFallback(input),
+        model: null,
+      }
+    );
   }
 
   let existingNarrative: { text: string; model: string | null } | null = null;
@@ -213,6 +208,21 @@ export async function getOrCreateHomeMenuNarrative(
 
   if (existingNarrative) {
     return existingNarrative;
+  }
+
+  let narrative = {
+    text: buildHomeMenuNarrativeFallback(input),
+    model: null as string | null,
+  };
+
+  try {
+    const generatedNarrative = await generateHomeMenuNarrative(input);
+
+    if (generatedNarrative) {
+      narrative = generatedNarrative;
+    }
+  } catch (error) {
+    console.error("Home menu AI narrative failed", error);
   }
 
   try {

@@ -25,14 +25,6 @@ function buildReportText(dateLabel: string, items: Array<{ name: string; count: 
   ].join("\n");
 }
 
-function appendNarrativeToReportText(baseText: string, narrative: string | null) {
-  if (!narrative) {
-    return baseText;
-  }
-
-  return [baseText, "", "Comentario ejecutivo", narrative].join("\n");
-}
-
 function buildReportHtml(dateLabel: string, items: Array<{ name: string; count: number }>) {
   const rows = items
     .map(
@@ -47,20 +39,6 @@ function buildReportHtml(dateLabel: string, items: Array<{ name: string; count: 
     `<table style="width:100%;border-collapse:collapse;">`,
     rows,
     `</table>`,
-    `</div>`,
-  ].join("");
-}
-
-function appendNarrativeToReportHtml(baseHtml: string, narrative: string | null) {
-  if (!narrative) {
-    return baseHtml;
-  }
-
-  return [
-    baseHtml,
-    `<div style="font-family:Arial,sans-serif;max-width:560px;padding:0 24px 24px;color:#0f172a;">`,
-    `<p style="margin:20px 0 8px;font-size:12px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:#0f766e;">Comentario ejecutivo</p>`,
-    `<p style="margin:0;font-size:14px;line-height:1.6;color:#334155;">${escapeHtml(narrative)}</p>`,
     `</div>`,
   ].join("");
 }
@@ -108,14 +86,8 @@ export async function sendDailyReportEmail(): Promise<DailyReportSendResult> {
       from: process.env.REPORT_FROM_EMAIL,
       to: config.recipients,
       subject: buildReportSubject(summary.dateLabel),
-      text: appendNarrativeToReportText(
-        buildReportText(summary.dateLabel, summary.items),
-        summary.narrative.text,
-      ),
-      html: appendNarrativeToReportHtml(
-        buildReportHtml(summary.dateLabel, summary.items),
-        summary.narrative.text,
-      ),
+      text: buildReportText(summary.dateLabel, summary.items),
+      html: buildReportHtml(summary.dateLabel, summary.items),
     }),
   });
 

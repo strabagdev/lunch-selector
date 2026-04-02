@@ -1,8 +1,4 @@
 import { prisma } from "@/lib/prisma";
-import {
-  generateDailyReportNarrative,
-  isLunchAiEnabled,
-} from "@/lib/lunch-ai";
 
 export const REPORT_TIMEZONE = process.env.REPORT_TIMEZONE ?? "America/Santiago";
 
@@ -15,10 +11,6 @@ export type DailyReportSummary = {
     name: string;
     count: number;
   }>;
-  narrative: {
-    text: string | null;
-    model: string | null;
-  };
 };
 
 export type DailyReportSendResult =
@@ -86,7 +78,6 @@ export function getDailyReportConfigStatus() {
     isReady: missing.length === 0,
     missing,
     recipients: getRecipientsFromEnv(),
-    openAiEnabled: isLunchAiEnabled(),
   };
 }
 
@@ -133,50 +124,11 @@ export async function getDailyReportSummary(): Promise<DailyReportSummary | null
     count: countsByOptionId.get(option.id) ?? 0,
   }));
   const totalSelections = menuDay.selections.length;
-  const sortedItems = [...items].sort((left, right) => {
-    if (right.count !== left.count) {
-      return right.count - left.count;
-    }
-
-    return left.name.localeCompare(right.name, "es");
-  });
-  const lowestCount = sortedItems.at(-1)?.count ?? 0;
-  let narrative: DailyReportSummary["narrative"] = {
-    text: null,
-    model: null,
-  };
-
-  if (totalSelections > 0) {
-    try {
-      const generatedNarrative = await generateDailyReportNarrative({
-        dateLabel: formatReportDate(menuDay.date),
-        totalSelections,
-        topChoice: sortedItems[0]
-          ? {
-              name: sortedItems[0].name,
-              count: sortedItems[0].count,
-            }
-          : null,
-        leastChosenOptions: sortedItems
-          .filter((item) => item.count === lowestCount)
-          .slice(0, 2)
-          .map((item) => ({ name: item.name, count: item.count })),
-        items: items.map((item) => ({ name: item.name, count: item.count })),
-      });
-
-      if (generatedNarrative) {
-        narrative = generatedNarrative;
-      }
-    } catch (error) {
-      console.error("Daily report AI narrative failed", error);
-    }
-  }
 
   return {
     dateKey,
     dateLabel: formatReportDate(menuDay.date),
     totalSelections,
     items,
-    narrative,
   };
 }

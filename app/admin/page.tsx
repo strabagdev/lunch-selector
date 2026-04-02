@@ -5,7 +5,6 @@ import { prisma } from "@/lib/prisma";
 import ConfirmSubmitButton from "@/app/admin/confirm-submit-button";
 import {
   getDailyReportConfigStatus,
-  getDailyReportSummary,
 } from "@/lib/daily-report";
 
 export const dynamic = "force-dynamic";
@@ -125,7 +124,7 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
     revalidatePath("/");
   }
 
-  const [todayMenuDayStatus, menuDays, dailyReportSummary] = await Promise.all([
+  const [todayMenuDayStatus, menuDays] = await Promise.all([
     prisma.menuDay.findUnique({
       where: { date: todayDate },
       select: {
@@ -161,7 +160,6 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
         },
       },
     }),
-    getDailyReportSummary(),
   ]);
 
   const selectedMenuDaySummary =
@@ -243,26 +241,10 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
             <p className="text-xs leading-5 text-muted">
               Estado de hoy: {isTodayClosed ? "cerrado" : "abierto"}.
             </p>
-            <p className="text-xs leading-5 text-muted">
-              IA: {dailyReportConfig.openAiEnabled ? "activa" : "desactivada"}.
-            </p>
             {dailyReportConfig.recipients.length > 0 ? (
               <p className="text-xs leading-5 text-muted">
                 Destinatarios: {dailyReportConfig.recipients.join(", ")}
               </p>
-            ) : null}
-            {dailyReportSummary?.narrative.text ? (
-              <div className="rounded-[18px] border border-[rgba(15,118,110,0.16)] bg-[rgba(15,118,110,0.05)] px-4 py-3">
-                <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-accent">
-                  Comentario IA
-                </p>
-                <p className="mt-2 text-sm leading-6 text-foreground">
-                  {dailyReportSummary.narrative.text}
-                </p>
-                <p className="mt-2 text-xs text-muted">
-                  Modelo: {dailyReportSummary.narrative.model ?? "OpenAI"}
-                </p>
-              </div>
             ) : null}
           </div>
 
