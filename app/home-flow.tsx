@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 type PersonOption = {
   id: string;
@@ -34,8 +34,6 @@ type HomeFlowProps = {
     text: string;
     model: string | null;
   } | null;
-  todayMenuOptions: MenuOptionItem[];
-  todaySelectionCount: number;
   todayMonthKey: string;
   cutoffNotice: string;
   isTodayClosed: boolean;
@@ -123,8 +121,6 @@ export function HomeFlow({
   people,
   todayLabel,
   todayNarrative,
-  todayMenuOptions,
-  todaySelectionCount,
   todayMonthKey,
   cutoffNotice,
   isTodayClosed,
@@ -147,6 +143,20 @@ export function HomeFlow({
     initialSuccess ? initialOptionId ?? "" : "",
   );
   const [isCutoffNoticeDismissed, setIsCutoffNoticeDismissed] = useState(false);
+
+  useEffect(() => {
+    if (currentStep !== 1 || isCutoffNoticeDismissed) {
+      return;
+    }
+
+    const timeoutId = window.setTimeout(() => {
+      setIsCutoffNoticeDismissed(true);
+    }, 30_000);
+
+    return () => {
+      window.clearTimeout(timeoutId);
+    };
+  }, [currentStep, isCutoffNoticeDismissed]);
 
   const selectedMenuDay =
     menuDays.find((menuDay) => menuDay.id === selectedMenuDayId) ?? null;
@@ -215,6 +225,40 @@ export function HomeFlow({
 
   return (
     <>
+      {todayNarrative ? (
+        <section className="overflow-hidden rounded-[28px] border border-[rgba(15,118,110,0.14)] bg-[radial-gradient(circle_at_top_left,rgba(15,118,110,0.2),transparent_34%),linear-gradient(135deg,rgba(10,90,84,0.96),rgba(15,118,110,0.9)_55%,rgba(219,243,238,0.92)_140%)] p-6 text-white shadow-[0_24px_60px_-36px_rgba(6,78,59,0.55)] sm:p-8">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-white/70">
+            Narrador del menu
+          </p>
+          <div className="mt-4 flex items-start gap-4">
+            <span className="inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-white/16 bg-white/12 shadow-[inset_0_1px_0_rgba(255,255,255,0.18)]">
+              <svg
+                aria-hidden="true"
+                viewBox="0 0 24 24"
+                className="h-6 w-6"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.8"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <path d="M4 13.5V6.8A1.8 1.8 0 0 1 5.8 5h12.4A1.8 1.8 0 0 1 20 6.8v6.7A1.8 1.8 0 0 1 18.2 15.3H9l-4.2 3.2v-3.2H5.8A1.8 1.8 0 0 1 4 13.5Z" />
+                <path d="M8 9.5h8" />
+                <path d="M8 12.5h5" />
+              </svg>
+            </span>
+            <div className="max-w-3xl space-y-3">
+              <h2 className="text-2xl font-semibold tracking-tight sm:text-[2rem]">
+                El menu de hoy ya tiene comentarista.
+              </h2>
+              <p className="text-base leading-7 text-white/88 sm:text-lg">
+                {todayNarrative.text}
+              </p>
+            </div>
+          </div>
+        </section>
+      ) : null}
+
       {currentStep === 1 && !isCutoffNoticeDismissed ? (
         <section className="rounded-[18px] border border-[rgba(220,63,97,0.18)] bg-[rgba(220,63,97,0.08)] px-4 py-3 text-sm font-medium text-[var(--danger)] shadow-[var(--shadow-soft)]">
           <div className="flex items-center justify-between gap-3">
@@ -308,77 +352,6 @@ export function HomeFlow({
           </div>
         </div>
       </section>
-
-      {todayNarrative && todayMenuOptions.length > 0 ? (
-        <section className="overflow-hidden rounded-[28px] border border-[rgba(15,118,110,0.14)] bg-[radial-gradient(circle_at_top_left,rgba(15,118,110,0.2),transparent_34%),linear-gradient(135deg,rgba(10,90,84,0.96),rgba(15,118,110,0.9)_55%,rgba(219,243,238,0.92)_140%)] p-6 text-white shadow-[0_24px_60px_-36px_rgba(6,78,59,0.55)] sm:p-8">
-          <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
-            <div className="max-w-3xl">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-white/70">
-                Narrador del menu
-              </p>
-              <div className="mt-4 flex items-start gap-4">
-                <span className="inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-white/16 bg-white/12 shadow-[inset_0_1px_0_rgba(255,255,255,0.18)]">
-                  <svg
-                    aria-hidden="true"
-                    viewBox="0 0 24 24"
-                    className="h-6 w-6"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="1.8"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  >
-                    <path d="M4 13.5V6.8A1.8 1.8 0 0 1 5.8 5h12.4A1.8 1.8 0 0 1 20 6.8v6.7A1.8 1.8 0 0 1 18.2 15.3H9l-4.2 3.2v-3.2H5.8A1.8 1.8 0 0 1 4 13.5Z" />
-                    <path d="M8 9.5h8" />
-                    <path d="M8 12.5h5" />
-                  </svg>
-                </span>
-                <div className="space-y-3">
-                  <h2 className="text-2xl font-semibold tracking-tight sm:text-[2rem]">
-                    El menu de hoy ya tiene comentarista.
-                  </h2>
-                  <p className="max-w-2xl text-base leading-7 text-white/88 sm:text-lg">
-                    {todayNarrative.text}
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            <div className="min-w-0 rounded-[24px] border border-white/14 bg-white/10 p-4 backdrop-blur-sm sm:p-5">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-white/70">
-                Pulso del dia
-              </p>
-              <p className="mt-2 text-3xl font-semibold tracking-tight">
-                {todaySelectionCount}
-              </p>
-              <p className="mt-1 text-sm text-white/78">
-                {todaySelectionCount === 1 ? "eleccion registrada" : "elecciones registradas"}
-              </p>
-            </div>
-          </div>
-
-          <div className="mt-6 flex flex-wrap gap-3">
-            {todayMenuOptions.map((option, index) => (
-              <div
-                key={option.id}
-                className="min-w-[150px] flex-1 rounded-[20px] border border-white/14 bg-white/10 px-4 py-3 backdrop-blur-sm"
-              >
-                <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-white/68">
-                  Opcion {index + 1}
-                </p>
-                <p className="mt-2 text-sm font-semibold leading-5 text-white">
-                  {option.name}
-                </p>
-                <p className="mt-2 text-xs text-white/74">
-                  {option.selectionCount === 1
-                    ? "1 persona ya la tiene entre ceja y ceja"
-                    : `${option.selectionCount} personas ya la estan mirando con hambre`}
-                </p>
-              </div>
-            ))}
-          </div>
-        </section>
-      ) : null}
 
       {currentStep === 1 && isTodayClosed ? (
         <section className="rounded-[26px] border border-[rgba(220,63,97,0.16)] bg-[linear-gradient(180deg,rgba(255,255,255,0.96),rgba(255,245,247,0.96))] p-6 shadow-[var(--shadow-card)] sm:p-8">

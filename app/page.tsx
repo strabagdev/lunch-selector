@@ -2,8 +2,7 @@ import { revalidatePath } from "next/cache";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import {
-  buildHomeMenuNarrativeFallback,
-  generateHomeMenuNarrative,
+  getOrCreateHomeMenuNarrative,
 } from "@/lib/lunch-ai";
 import { prisma } from "@/lib/prisma";
 import { HomeFlow } from "./home-flow";
@@ -168,58 +167,14 @@ export default async function Home({ searchParams }: HomePageProps) {
   const isTodayClosed = todayMenuDay?.isClosed ?? false;
   const todayMenuNarrative = todayMenuSummary
     ? await (async () => {
-        const items = todayMenuSummary.options.map((option) => ({
-          name: option.name,
-          count: option.selectionCount,
-        }));
-        const sortedItems = [...items].sort((left, right) => {
-          if (right.count !== left.count) {
-            return right.count - left.count;
-          }
+      const items = todayMenuSummary.options.map((option) => ({
+        name: option.name,
+      }));
 
-          return left.name.localeCompare(right.name, "es");
+        return getOrCreateHomeMenuNarrative(todayDate, {
+          dateLabel: todayLabel,
+          items,
         });
-        const topChoice = sortedItems[0] ?? null;
-
-        try {
-          const generated = await generateHomeMenuNarrative({
-            dateLabel: todayLabel,
-            totalSelections: todayMenuSummary.selections.length,
-            isClosed: isTodayClosed,
-            items,
-            topChoice: topChoice
-              ? {
-                  name: topChoice.name,
-                  count: topChoice.count,
-                }
-              : null,
-          });
-
-          if (generated) {
-            return {
-              text: generated.text,
-              model: generated.model,
-            };
-          }
-        } catch (error) {
-          console.error("Home menu AI narrative failed", error);
-        }
-
-        return {
-          text: buildHomeMenuNarrativeFallback({
-            dateLabel: todayLabel,
-            totalSelections: todayMenuSummary.selections.length,
-            isClosed: isTodayClosed,
-            items,
-            topChoice: topChoice
-              ? {
-                  name: topChoice.name,
-                  count: topChoice.count,
-                }
-              : null,
-          }),
-          model: null,
-        };
       })()
     : null;
 
@@ -313,8 +268,6 @@ export default async function Home({ searchParams }: HomePageProps) {
           people={people}
           todayLabel={todayLabel}
           todayNarrative={todayMenuNarrative}
-          todayMenuOptions={todayMenuSummary?.options ?? []}
-          todaySelectionCount={todayMenuSummary?.selections.length ?? 0}
           todayMonthKey={todayMonthKey}
           cutoffNotice={CUTOFF_NOTICE}
           isTodayClosed={isTodayClosed}

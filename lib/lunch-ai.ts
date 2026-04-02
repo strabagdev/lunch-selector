@@ -1,3 +1,5 @@
+import { prisma } from "@/lib/prisma";
+
 const DEFAULT_MODEL = "gpt-4o-mini";
 const OPENAI_API_URL = "https://api.openai.com/v1/chat/completions";
 
@@ -16,10 +18,9 @@ type DailyReportNarrativeInput = {
 
 type HomeMenuNarrativeInput = {
   dateLabel: string;
-  totalSelections: number;
-  isClosed: boolean;
-  items: OptionCount[];
-  topChoice: OptionCount | null;
+  items: Array<{
+    name: string;
+  }>;
 };
 
 function coerceText(value: unknown) {
@@ -100,9 +101,6 @@ function buildDailyReportBrief(input: DailyReportNarrativeInput) {
 function buildHomeMenuBrief(input: HomeMenuNarrativeInput) {
   return {
     fecha: input.dateLabel,
-    estado: input.isClosed ? "cerrado" : "abierto",
-    total_selecciones: input.totalSelections,
-    opcion_lider: input.topChoice,
     menu: input.items,
   };
 }
@@ -139,28 +137,7 @@ export function buildHomeMenuNarrativeFallback(input: HomeMenuNarrativeInput) {
       ? optionNames[0]
       : `${optionNames.slice(0, -1).join(", ")} y ${optionNames.at(-1)}`;
 
-  if (input.totalSelections === 0) {
-    return `Hoy el menu entra a escena con ${readableOptions}. Aun no hay votos sobre la mesa, asi que este es el momento perfecto para que alguien rompa el empate antes de que el almuerzo se ponga dramatico.`;
-  }
-
-  if (!input.topChoice) {
-    return `Hoy tenemos ${readableOptions} y ya van ${input.totalSelections} elecciones dando vueltas. El tablero esta conversado, pero todavia hay espacio para un giro culinario de ultimo minuto.`;
-  }
-
-  const tiedTopChoices = input.items.filter(
-    (item) => item.count === input.topChoice?.count,
-  );
-
-  if (tiedTopChoices.length > 1) {
-    const tiedNames =
-      tiedTopChoices.length === 2
-        ? `${tiedTopChoices[0]?.name} y ${tiedTopChoices[1]?.name}`
-        : tiedTopChoices.map((item) => item.name).join(", ");
-
-    return `Hoy el menu trae ${readableOptions} y la votacion anda juguetona: ${tiedNames} van cabeza a cabeza con ${input.topChoice.count} pedidos. Basicamente, el almuerzo de hoy esta en tiempo extra.`;
-  }
-
-  return `Hoy desfilan ${readableOptions} y ${input.topChoice.name} viene sacando pecho con ${input.topChoice.count} elecciones de ${input.totalSelections}. Hay competencia, claro, pero por ahora esa opcion va caminando como si ya escuchara aplausos desde la cocina.`;
+  return `Hoy el menu viene con ${readableOptions}. La idea es simple: presentar las opciones con ganas, como si cada plato estuviera haciendo una entrada elegante a la mesa y esperando su momento de gloria.`;
 }
 
 export async function generateHomeMenuNarrative(input: HomeMenuNarrativeInput) {
@@ -174,9 +151,103 @@ export async function generateHomeMenuNarrative(input: HomeMenuNarrativeInput) {
       "Usa solo el brief entregado y no inventes datos.",
       "Escribe un unico parrafo corto en espanol, de 2 a 4 oraciones.",
       "Debe sonar cercano, ingenioso y con humor ligero, como si presentaras el menu del dia a un equipo de trabajo.",
-      "Menciona las opciones de comida de forma inteligente y grafica, alude al estado actual de las elecciones y evita sonar burlon o infantil.",
+      "Enfocate en introducir los platos y hacerlos sonar apetitosos o memorables con imagenes ligeras y simpaticas.",
+      "No hables del estado de las elecciones, ni de cual va ganando, ni de impulso, tendencia o competencia entre opciones.",
+      "No menciones cantidades exactas ni aproximadas de selecciones, votos o personas para hoy.",
+      "No hables de volumen, numero de pedidos, conteos, totales o magnitudes.",
       "No uses listas, no cites JSON, no hables de inteligencia artificial ni de modelos.",
     ].join(" "),
     brief: buildHomeMenuBrief(input),
   });
+}
+
+export async function getOrCreateHomeMenuNarrative(
+  date: Date,
+  input: HomeMenuNarrativeInput,
+) {
+  const cacheEnabled = process.env.ENABLE_HOME_MENU_NARRATIVE_CACHE === "1";
+  const narrativeStore = cacheEnabled
+    ? (
+    prisma as typeof prisma & {
+      homeMenuNarrative?: {
+        findUnique: (args: unknown) => Promise<{ text: string; model: string | null } | null>;
+        create: (args: unknown) => Promise<{ text: string; model: string | null }>;
+      };
+    }
+      ).homeMenuNarrative
+    : undefined;
+
+  let narrative = {
+    text: buildHomeMenuNarrativeFallback(input),
+    model: null as string | null,
+  };
+
+  try {
+    const generatedNarrative = await generateHomeMenuNarrative(input);
+
+    if (generatedNarrative) {
+      narrative = generatedNarrative;
+    }
+  } catch (error) {
+    console.error("Home menu AI narrative failed", error);
+  }
+
+  if (!cacheEnabled || !narrativeStore) {
+    return narrative;
+  }
+
+  let existingNarrative: { text: string; model: string | null } | null = null;
+
+  try {
+    existingNarrative = await narrativeStore.findUnique({
+      where: { date },
+      select: {
+        text: true,
+        model: true,
+      },
+    });
+  } catch (error) {
+    console.error("Home menu narrative cache read failed", error);
+    return narrative;
+  }
+
+  if (existingNarrative) {
+    return existingNarrative;
+  }
+
+  try {
+    const createdNarrative = await narrativeStore.create({
+      data: {
+        date,
+        text: narrative.text,
+        model: narrative.model,
+      },
+      select: {
+        text: true,
+        model: true,
+      },
+    });
+
+    return createdNarrative;
+  } catch (error) {
+    console.error("Home menu narrative cache write failed", error);
+  }
+
+  try {
+    const persistedNarrative = await narrativeStore.findUnique({
+    where: { date },
+    select: {
+      text: true,
+      model: true,
+    },
+  });
+
+    if (persistedNarrative) {
+      return persistedNarrative;
+    }
+  } catch (error) {
+    console.error("Home menu narrative cache reread failed", error);
+  }
+
+  return narrative;
 }

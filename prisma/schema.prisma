@@ -61,3 +61,14 @@ model LunchSelection {
   @@index([menuDayId])
   @@index([menuOptionId])
 }
+
+model HomeMenuNarrative {
+  id        String   @id @default(cuid())
+  date      DateTime @db.Date
+  text      String
+  model     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([date])
+}
