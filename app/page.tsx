@@ -52,6 +52,49 @@ function getDateKey(date: Date) {
   return date.toISOString().slice(0, 10);
 }
 
+function mapMenuDayForHome(menuDay: {
+  id: string;
+  date: Date;
+  options: Array<{
+    id: string;
+    name: string;
+  }>;
+  selections: Array<{
+    personId: string;
+    menuOptionId: string;
+    menuOption: {
+      name: string;
+    };
+  }>;
+}) {
+  const selectionCountByOption = new Map(menuDay.options.map((option) => [option.id, 0]));
+
+  for (const selection of menuDay.selections) {
+    selectionCountByOption.set(
+      selection.menuOptionId,
+      (selectionCountByOption.get(selection.menuOptionId) ?? 0) + 1,
+    );
+  }
+
+  return {
+    id: menuDay.id,
+    dateKey: getDateKey(menuDay.date),
+    fullDateLabel: formatMenuDate(menuDay.date),
+    shortDateLabel: formatShortMenuDate(menuDay.date),
+    dayNumber: menuDay.date.getUTCDate(),
+    selectedPersonIds: menuDay.selections.map((selection) => selection.personId),
+    selections: menuDay.selections.map((selection) => ({
+      personId: selection.personId,
+      menuOptionName: selection.menuOption.name,
+    })),
+    options: menuDay.options.map((option) => ({
+      id: option.id,
+      name: option.name,
+      selectionCount: selectionCountByOption.get(option.id) ?? 0,
+    })),
+  };
+}
+
 export default async function Home({ searchParams }: HomePageProps) {
   const shareUrl =
     process.env.NEXT_PUBLIC_APP_URL ?? "https://lunch-selector-production.up.railway.app/";
@@ -211,42 +254,16 @@ export default async function Home({ searchParams }: HomePageProps) {
           todayMonthKey={todayMonthKey}
           cutoffNotice={CUTOFF_NOTICE}
           isTodayClosed={isTodayClosed}
-          menuDays={selectableMenuDays.map((menuDay) => {
-            const selectionCountByOption = new Map(
-              menuDay.options.map((option) => [option.id, 0]),
-            );
-
-            for (const selection of menuDay.selections) {
-              selectionCountByOption.set(
-                selection.menuOptionId,
-                (selectionCountByOption.get(selection.menuOptionId) ?? 0) + 1,
-              );
-            }
-
-            return {
-              id: menuDay.id,
-              dateKey: getDateKey(menuDay.date),
-              fullDateLabel: formatMenuDate(menuDay.date),
-              shortDateLabel: formatShortMenuDate(menuDay.date),
-              dayNumber: menuDay.date.getUTCDate(),
-              selectedPersonIds: menuDay.selections.map((selection) => selection.personId),
-              selections: menuDay.selections.map((selection) => ({
-                personId: selection.personId,
-                menuOptionName: selection.menuOption.name,
-              })),
-              options: menuDay.options.map((option) => ({
-                id: option.id,
-                name: option.name,
-                selectionCount: selectionCountByOption.get(option.id) ?? 0,
-              })),
-            };
-          })}
-        initialMenuDayId={initialMenuDayId}
-        initialPersonId={initialPersonId ?? null}
-        initialOptionId={initialOptionId ?? null}
-        initialSuccess={successParam === "1"}
-        submitSelection={submitSelection}
-      />
+          menuDays={selectableMenuDays.map(mapMenuDayForHome)}
+          coverageMenuDays={availableMenuDays
+            .filter((menuDay) => menuDay.options.length > 0)
+            .map(mapMenuDayForHome)}
+          initialMenuDayId={initialMenuDayId}
+          initialPersonId={initialPersonId ?? null}
+          initialOptionId={initialOptionId ?? null}
+          initialSuccess={successParam === "1"}
+          submitSelection={submitSelection}
+        />
       </main>
     </>
   );

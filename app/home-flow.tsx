@@ -34,6 +34,7 @@ type HomeFlowProps = {
   cutoffNotice: string;
   isTodayClosed: boolean;
   menuDays: MenuDayItem[];
+  coverageMenuDays?: MenuDayItem[];
   initialMenuDayId: string | null;
   initialPersonId: string | null;
   initialOptionId: string | null;
@@ -119,6 +120,7 @@ export function HomeFlow({
   cutoffNotice,
   isTodayClosed,
   menuDays,
+  coverageMenuDays = menuDays,
   initialMenuDayId,
   initialPersonId,
   initialOptionId,
@@ -162,7 +164,7 @@ export function HomeFlow({
       : monthKeys[0] ?? todayMonthKey,
   );
   const selectedPersonCoveredDays = selectedPersonId
-    ? menuDays
+    ? coverageMenuDays
         .flatMap((menuDay) => {
           const selection = menuDay.selections?.find(
             (menuDaySelection) => menuDaySelection.personId === selectedPersonId,
