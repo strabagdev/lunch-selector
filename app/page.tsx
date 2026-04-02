@@ -1,6 +1,10 @@
 import { revalidatePath } from "next/cache";
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import {
+  buildHomeMenuNarrativeFallback,
+  generateHomeMenuNarrative,
+} from "@/lib/lunch-ai";
 import { prisma } from "@/lib/prisma";
 import { HomeFlow } from "./home-flow";
 import { QrLauncher } from "./qr-launcher";
@@ -160,7 +164,64 @@ export default async function Home({ searchParams }: HomePageProps) {
   const todayMenuDay =
     availableMenuDays.find((availableMenuDay) => getDateKey(availableMenuDay.date) === todayKey) ??
     null;
+  const todayMenuSummary = todayMenuDay ? mapMenuDayForHome(todayMenuDay) : null;
   const isTodayClosed = todayMenuDay?.isClosed ?? false;
+  const todayMenuNarrative = todayMenuSummary
+    ? await (async () => {
+        const items = todayMenuSummary.options.map((option) => ({
+          name: option.name,
+          count: option.selectionCount,
+        }));
+        const sortedItems = [...items].sort((left, right) => {
+          if (right.count !== left.count) {
+            return right.count - left.count;
+          }
+
+          return left.name.localeCompare(right.name, "es");
+        });
+        const topChoice = sortedItems[0] ?? null;
+
+        try {
+          const generated = await generateHomeMenuNarrative({
+            dateLabel: todayLabel,
+            totalSelections: todayMenuSummary.selections.length,
+            isClosed: isTodayClosed,
+            items,
+            topChoice: topChoice
+              ? {
+                  name: topChoice.name,
+                  count: topChoice.count,
+                }
+              : null,
+          });
+
+          if (generated) {
+            return {
+              text: generated.text,
+              model: generated.model,
+            };
+          }
+        } catch (error) {
+          console.error("Home menu AI narrative failed", error);
+        }
+
+        return {
+          text: buildHomeMenuNarrativeFallback({
+            dateLabel: todayLabel,
+            totalSelections: todayMenuSummary.selections.length,
+            isClosed: isTodayClosed,
+            items,
+            topChoice: topChoice
+              ? {
+                  name: topChoice.name,
+                  count: topChoice.count,
+                }
+              : null,
+          }),
+          model: null,
+        };
+      })()
+    : null;
 
   const requestedMenuDaySummary =
     selectableMenuDays.find((menuDay) => menuDay.id === requestedMenuDayId) ?? null;
@@ -243,7 +304,7 @@ export default async function Home({ searchParams }: HomePageProps) {
       <QrLauncher shareUrl={shareUrl} />
       <Link
         href="/admin"
-        className="fixed right-5 top-[5.35rem] z-40 rounded-full border border-border bg-surface px-4 py-2 text-sm font-semibold shadow-[0_12px_32px_rgba(29,29,27,0.14)] transition-colors hover:bg-background"
+        className="fixed right-5 top-[8.25rem] z-40 rounded-full border border-border bg-surface px-4 py-2 text-sm font-semibold shadow-[0_12px_32px_rgba(29,29,27,0.14)] transition-colors hover:bg-background"
       >
         AD
       </Link>
@@ -251,6 +312,9 @@ export default async function Home({ searchParams }: HomePageProps) {
         <HomeFlow
           people={people}
           todayLabel={todayLabel}
+          todayNarrative={todayMenuNarrative}
+          todayMenuOptions={todayMenuSummary?.options ?? []}
+          todaySelectionCount={todayMenuSummary?.selections.length ?? 0}
           todayMonthKey={todayMonthKey}
           cutoffNotice={CUTOFF_NOTICE}
           isTodayClosed={isTodayClosed}
