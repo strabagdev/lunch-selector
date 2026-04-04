@@ -1,8 +1,13 @@
 import Link from "next/link";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import type { ReactNode } from "react";
 import { prisma } from "@/lib/prisma";
 import ConfirmSubmitButton from "@/app/admin/confirm-submit-button";
+import {
+  getStoredHomeMenuNarrative,
+  resetHomeMenuNarrative,
+} from "@/lib/lunch-ai";
 import {
   getDailyReportConfigStatus,
 } from "@/lib/daily-report";
@@ -13,6 +18,7 @@ type AdminPageProps = {
   searchParams: Promise<{
     menuDay?: string | string[] | undefined;
     report?: string | string[] | undefined;
+    narrative?: string | string[] | undefined;
   }>;
 };
 
@@ -55,10 +61,21 @@ function getTodayKey() {
   }).format(new Date());
 }
 
+function renderBoldMarkdown(text: string): ReactNode[] {
+  return text.split(/(\*\*.*?\*\*)/g).filter(Boolean).map((part, index) => {
+    if (part.startsWith("**") && part.endsWith("**")) {
+      return <strong key={`${part}-${index}`}>{part.slice(2, -2)}</strong>;
+    }
+
+    return <span key={`${part}-${index}`}>{part}</span>;
+  });
+}
+
 export default async function AdminPage({ searchParams }: AdminPageProps) {
   const resolvedSearchParams = await searchParams;
   const requestedMenuDayId = getMenuDayParam(resolvedSearchParams.menuDay);
   const reportStatus = getMenuDayParam(resolvedSearchParams.report);
+  const narrativeStatus = getMenuDayParam(resolvedSearchParams.narrative);
   const dailyReportConfig = getDailyReportConfigStatus();
   const todayKey = getTodayKey();
   const todayDate = new Date(`${todayKey}T00:00:00.000Z`);
@@ -124,7 +141,24 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
     revalidatePath("/");
   }
 
-  const [todayMenuDayStatus, menuDays] = await Promise.all([
+  async function regenerateHomeNarrative() {
+    "use server";
+
+    const result = await resetHomeMenuNarrative(todayDate);
+    revalidatePath("/");
+    revalidatePath("/admin");
+
+    const nextParams = new URLSearchParams();
+
+    if (requestedMenuDayId) {
+      nextParams.set("menuDay", requestedMenuDayId);
+    }
+
+    nextParams.set("narrative", result.reason === "ok" ? "regenerated" : result.reason);
+    redirect(`/admin?${nextParams.toString()}`);
+  }
+
+  const [todayMenuDayStatus, menuDays, currentNarrative] = await Promise.all([
     prisma.menuDay.findUnique({
       where: { date: todayDate },
       select: {
@@ -160,6 +194,7 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
         },
       },
     }),
+    getStoredHomeMenuNarrative(todayDate),
   ]);
 
   const selectedMenuDaySummary =
@@ -258,6 +293,47 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
             </button>
           </form>
         </div>
+      </section>
+
+      <section className="rounded-[26px] border border-border bg-[linear-gradient(180deg,rgba(255,255,255,0.96),rgba(245,249,248,0.92))] p-6 shadow-[var(--shadow-card)] sm:p-8">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+          <div className="space-y-2">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-accent">
+              Comentario diario
+            </p>
+            <h2 className="text-2xl font-semibold tracking-tight">
+              Regenerar
+            </h2>
+            <p className="text-sm leading-6 text-muted">
+              Puedes limpiar el comentario actual para que la portada genere uno nuevo
+              para el d&iacute;a en la siguiente carga.
+            </p>
+          </div>
+
+          <div className="flex w-full flex-col gap-3 sm:w-auto sm:min-w-[320px]">
+            <form action={regenerateHomeNarrative} className="w-full sm:w-auto">
+              <button
+                type="submit"
+                className="w-full rounded-[16px] border border-[var(--accent-border)] bg-[var(--accent-soft)] px-5 py-3 text-sm font-medium text-[var(--accent)] transition hover:brightness-95 sm:w-auto"
+              >
+                Regenerar comentario del d&iacute;a
+              </button>
+            </form>
+
+            <div className="rounded-[18px] border border-border bg-[var(--card)] p-3 shadow-[var(--shadow-soft)]">
+              <div className="min-w-0 rounded-[14px] bg-[rgba(17,32,28,0.03)] px-3 py-2">
+                <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-muted">
+                  Actual
+                </p>
+                <p className="mt-1 line-clamp-3 text-xs leading-5 text-foreground">
+                  {currentNarrative?.text
+                    ? renderBoldMarkdown(currentNarrative.text)
+                    : "Aun no hay comentario diario guardado."}
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
 
         {reportStatus === "closed" ? (
           <div className="mt-4 rounded-[18px] border border-[rgba(15,118,110,0.18)] bg-[rgba(15,118,110,0.06)] px-4 py-3 text-sm text-[var(--accent)]">
@@ -280,6 +356,24 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
         {reportStatus === "close-error" ? (
           <div className="mt-4 rounded-[18px] border border-[rgba(220,63,97,0.16)] bg-[rgba(220,63,97,0.06)] px-4 py-3 text-sm text-[var(--danger)]">
             No se pudieron cerrar las solicitudes de hoy. Revisa los logs del despliegue.
+          </div>
+        ) : null}
+
+        {narrativeStatus === "regenerated" ? (
+          <div className="mt-4 rounded-[18px] border border-[rgba(15,118,110,0.18)] bg-[rgba(15,118,110,0.06)] px-4 py-3 text-sm text-[var(--accent)]">
+            El comentario del d&iacute;a se limpiar&aacute; y se regenerar&aacute; en la pr&oacute;xima carga de la portada.
+          </div>
+        ) : null}
+
+        {narrativeStatus === "cache_disabled" ? (
+          <div className="mt-4 rounded-[18px] border border-border bg-background px-4 py-3 text-sm text-muted">
+            La cache del comentario diario est&aacute; desactivada en este entorno.
+          </div>
+        ) : null}
+
+        {narrativeStatus === "error" ? (
+          <div className="mt-4 rounded-[18px] border border-[rgba(220,63,97,0.16)] bg-[rgba(220,63,97,0.06)] px-4 py-3 text-sm text-[var(--danger)]">
+            No se pudo regenerar el comentario del d&iacute;a. Revisa los logs del despliegue.
           </div>
         ) : null}
       </section>

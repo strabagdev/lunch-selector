@@ -131,7 +131,7 @@ export function buildHomeMenuNarrativeFallback(input: HomeMenuNarrativeInput) {
     return "La cocina sigue en modo misterio: todavia no hay opciones publicadas para hoy, asi que por ahora el menu esta jugando al escondite.";
   }
 
-  const optionNames = input.items.map((item) => item.name);
+  const optionNames = input.items.map((item) => `**${item.name}**`);
   const readableOptions =
     optionNames.length === 1
       ? optionNames[0]
@@ -147,15 +147,16 @@ export async function generateHomeMenuNarrative(input: HomeMenuNarrativeInput) {
     model,
     errorLabel: "OpenAI home menu error",
     systemPrompt: [
-      "Eres la voz amistosa y un poco teatral de una app interna para elegir almuerzo.",
-      "Usa solo el brief entregado y no inventes datos.",
-      "Escribe un unico parrafo corto en espanol, de 2 a 4 oraciones.",
-      "Debe sonar cercano, ingenioso y con humor ligero, como si presentaras el menu del dia a un equipo de trabajo.",
-      "Enfocate en introducir los platos y hacerlos sonar apetitosos o memorables con imagenes ligeras y simpaticas.",
-      "No hables del estado de las elecciones, ni de cual va ganando, ni de impulso, tendencia o competencia entre opciones.",
-      "No menciones cantidades exactas ni aproximadas de selecciones, votos o personas para hoy.",
-      "No hables de volumen, numero de pedidos, conteos, totales o magnitudes.",
-      "No uses listas, no cites JSON, no hables de inteligencia artificial ni de modelos.",
+      "Eres la voz amistosa, cercana y ligeramente teatral de una app interna para elegir almuerzo.",
+      "Tu objetivo es informar y facilitar la toma de decision de forma rapida, clara y amena.",
+      "Usa exclusivamente el brief entregado, sin inventar ni agregar informacion.",
+      "Escribe un unico parrafo breve en espanol, de 2 a 4 oraciones.",
+      "Presenta las opciones de manera didactica y facil de comparar, destacando lo mas atractivo de cada plato con descripciones simples, apetitosas y memorables.",
+      "El tono debe ser ingenioso, agil y con humor sutil, como si ayudaras a un equipo con poco tiempo a decidir que comer.",
+      "Cada vez que menciones el nombre exacto de un plato del brief, encierralo entre doble asterisco para que salga en negrita, por ejemplo **Nombre del plato**.",
+      "No menciones estados de votacion, resultados, tendencias ni comparaciones competitivas entre opciones.",
+      "No incluyas cantidades, numeros, conteos, volumenes ni referencias a pedidos.",
+      "No uses listas, formato JSON ni menciones sobre inteligencia artificial o modelos.",
     ].join(" "),
     brief: buildHomeMenuBrief(input),
   });
@@ -203,7 +204,10 @@ export async function getOrCreateHomeMenuNarrative(
     });
   } catch (error) {
     console.error("Home menu narrative cache read failed", error);
-    return narrative;
+    return {
+      text: buildHomeMenuNarrativeFallback(input),
+      model: null,
+    };
   }
 
   if (existingNarrative) {
@@ -260,4 +264,65 @@ export async function getOrCreateHomeMenuNarrative(
   }
 
   return narrative;
+}
+
+export async function resetHomeMenuNarrative(date: Date) {
+  const cacheEnabled = process.env.ENABLE_HOME_MENU_NARRATIVE_CACHE === "1";
+  const narrativeStore = cacheEnabled
+    ? (
+        prisma as typeof prisma & {
+          homeMenuNarrative?: {
+            deleteMany: (args: unknown) => Promise<{ count: number }>;
+          };
+        }
+      ).homeMenuNarrative
+    : undefined;
+
+  if (!cacheEnabled || !narrativeStore) {
+    return { cleared: false, reason: "cache_disabled" as const };
+  }
+
+  try {
+    const result = await narrativeStore.deleteMany({
+      where: { date },
+    });
+
+    return {
+      cleared: result.count > 0,
+      reason: "ok" as const,
+    };
+  } catch (error) {
+    console.error("Home menu narrative reset failed", error);
+    return { cleared: false, reason: "error" as const };
+  }
+}
+
+export async function getStoredHomeMenuNarrative(date: Date) {
+  const cacheEnabled = process.env.ENABLE_HOME_MENU_NARRATIVE_CACHE === "1";
+  const narrativeStore = cacheEnabled
+    ? (
+        prisma as typeof prisma & {
+          homeMenuNarrative?: {
+            findUnique: (args: unknown) => Promise<{ text: string; model: string | null } | null>;
+          };
+        }
+      ).homeMenuNarrative
+    : undefined;
+
+  if (!cacheEnabled || !narrativeStore) {
+    return null;
+  }
+
+  try {
+    return await narrativeStore.findUnique({
+      where: { date },
+      select: {
+        text: true,
+        model: true,
+      },
+    });
+  } catch (error) {
+    console.error("Home menu narrative current read failed", error);
+    return null;
+  }
 }

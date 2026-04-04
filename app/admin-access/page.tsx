@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { cookies } from "next/headers";
 import {
@@ -88,12 +89,21 @@ export default async function AdminAccessPage({
             <p className="text-sm text-[var(--danger)]">La clave no coincide.</p>
           ) : null}
 
-          <button
-            type="submit"
-            className="rounded-2xl bg-foreground px-5 py-3 text-sm font-medium text-background transition-transform hover:-translate-y-0.5"
-          >
-            Entrar
-          </button>
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <Link
+              href="/"
+              className="inline-flex items-center justify-center rounded-2xl border border-border bg-background px-5 py-3 text-sm font-medium text-foreground transition-colors hover:bg-[var(--surface-strong)]"
+            >
+              Volver
+            </Link>
+
+            <button
+              type="submit"
+              className="rounded-2xl bg-foreground px-5 py-3 text-sm font-medium text-background transition-transform hover:-translate-y-0.5"
+            >
+              Entrar
+            </button>
+          </div>
         </form>
       </section>
     </main>

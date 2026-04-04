@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useSyncExternalStore } from "react";
+import type { ReactNode } from "react";
 
 type PersonOption = {
   id: string;
@@ -130,6 +131,20 @@ function buildMonthCalendarDays(monthKey: string, menuDays: MenuDayItem[]) {
   return monthDays;
 }
 
+function renderBoldMarkdown(text: string): ReactNode[] {
+  return text.split(/(\*\*.*?\*\*)/g).filter(Boolean).map((part, index) => {
+    if (part.startsWith("**") && part.endsWith("**")) {
+      return <strong key={`${part}-${index}`}>{part.slice(2, -2)}</strong>;
+    }
+
+    return <span key={`${part}-${index}`}>{part}</span>;
+  });
+}
+
+function subscribeToMount() {
+  return () => {};
+}
+
 export function HomeFlow({
   people,
   todayLabel,
@@ -155,11 +170,12 @@ export function HomeFlow({
   const [selectedMenuOptionId, setSelectedMenuOptionId] = useState(
     initialSuccess ? initialOptionId ?? "" : "",
   );
+  const hasMounted = useSyncExternalStore(subscribeToMount, () => true, () => false);
   const [isCutoffNoticeDismissed, setIsCutoffNoticeDismissed] = useState(false);
   const [cutoffNoticeProgress, setCutoffNoticeProgress] = useState(100);
 
   useEffect(() => {
-    if (currentStep !== 1 || isCutoffNoticeDismissed) {
+    if (!hasMounted || currentStep !== 1 || isCutoffNoticeDismissed) {
       return;
     }
 
@@ -178,7 +194,7 @@ export function HomeFlow({
       window.clearInterval(intervalId);
       window.clearTimeout(timeoutId);
     };
-  }, [currentStep, isCutoffNoticeDismissed]);
+  }, [currentStep, hasMounted, isCutoffNoticeDismissed]);
 
   const selectedMenuDay =
     menuDays.find((menuDay) => menuDay.id === selectedMenuDayId) ?? null;
@@ -247,7 +263,7 @@ export function HomeFlow({
 
   return (
     <>
-      {todayNarrative ? (
+      {hasMounted && currentStep === 1 && todayNarrative ? (
         <section className="overflow-hidden rounded-[28px] border border-[rgba(15,118,110,0.14)] bg-[radial-gradient(circle_at_top_left,rgba(15,118,110,0.2),transparent_34%),linear-gradient(135deg,rgba(10,90,84,0.96),rgba(15,118,110,0.9)_55%,rgba(219,243,238,0.92)_140%)] p-6 text-white shadow-[0_24px_60px_-36px_rgba(6,78,59,0.55)] sm:p-8">
           <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-white/70">
             Narrador del menu
@@ -274,14 +290,14 @@ export function HomeFlow({
                 El menu de hoy ya tiene comentarista.
               </h2>
               <p className="text-base leading-7 text-white/88 sm:text-lg">
-                {todayNarrative.text}
+                {renderBoldMarkdown(todayNarrative.text)}
               </p>
             </div>
           </div>
         </section>
       ) : null}
 
-      {currentStep === 1 && !isCutoffNoticeDismissed ? (
+      {hasMounted && currentStep === 1 && !isCutoffNoticeDismissed ? (
         <section className="rounded-[18px] border border-[rgba(220,63,97,0.18)] bg-[rgba(220,63,97,0.08)] px-4 py-3 text-sm font-medium text-[var(--danger)] shadow-[var(--shadow-soft)]">
           <div className="flex items-center justify-center gap-3 text-center">
             <div className="flex flex-1 items-center justify-center gap-3 text-center">
