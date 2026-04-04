@@ -265,34 +265,32 @@ export function HomeFlow({
     <>
       {hasMounted && currentStep === 1 && todayNarrative ? (
         <section className="overflow-hidden rounded-[28px] border border-[rgba(15,118,110,0.14)] bg-[radial-gradient(circle_at_top_left,rgba(15,118,110,0.2),transparent_34%),linear-gradient(135deg,rgba(10,90,84,0.96),rgba(15,118,110,0.9)_55%,rgba(219,243,238,0.92)_140%)] p-6 text-white shadow-[0_24px_60px_-36px_rgba(6,78,59,0.55)] sm:p-8">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-white/70">
-            Narrador del menu
-          </p>
-          <div className="mt-4 flex items-start gap-4">
-            <span className="inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-white/16 bg-white/12 shadow-[inset_0_1px_0_rgba(255,255,255,0.18)]">
-              <svg
-                aria-hidden="true"
-                viewBox="0 0 24 24"
-                className="h-6 w-6"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="1.8"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <path d="M4 13.5V6.8A1.8 1.8 0 0 1 5.8 5h12.4A1.8 1.8 0 0 1 20 6.8v6.7A1.8 1.8 0 0 1 18.2 15.3H9l-4.2 3.2v-3.2H5.8A1.8 1.8 0 0 1 4 13.5Z" />
-                <path d="M8 9.5h8" />
-                <path d="M8 12.5h5" />
-              </svg>
-            </span>
-            <div className="max-w-3xl space-y-3">
-              <h2 className="text-2xl font-semibold tracking-tight sm:text-[2rem]">
+          <div className="space-y-4">
+            <div className="flex items-center justify-center gap-3">
+              <span className="inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-white/16 bg-white/12 shadow-[inset_0_1px_0_rgba(255,255,255,0.18)]">
+                <svg
+                  aria-hidden="true"
+                  viewBox="0 0 24 24"
+                  className="h-6 w-6"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.8"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <path d="M4 13.5V6.8A1.8 1.8 0 0 1 5.8 5h12.4A1.8 1.8 0 0 1 20 6.8v6.7A1.8 1.8 0 0 1 18.2 15.3H9l-4.2 3.2v-3.2H5.8A1.8 1.8 0 0 1 4 13.5Z" />
+                  <path d="M8 9.5h8" />
+                  <path d="M8 12.5h5" />
+                </svg>
+              </span>
+              <h2 className="text-center text-[1.35rem] font-semibold tracking-tight sm:text-[2rem]">
                 El menu de hoy ya tiene comentarista.
               </h2>
-              <p className="text-base leading-7 text-white/88 sm:text-lg">
-                {renderBoldMarkdown(todayNarrative.text)}
-              </p>
             </div>
+
+            <p className="mx-auto max-w-3xl text-center text-base leading-7 text-white/88 sm:text-lg">
+              {renderBoldMarkdown(todayNarrative.text)}
+            </p>
           </div>
         </section>
       ) : null}

@@ -37,7 +37,7 @@ export function QrLauncher({ shareUrl }: QrLauncherProps) {
       <button
         type="button"
         onClick={() => setIsOpen(true)}
-        className="fixed right-5 top-24 z-40 rounded-full border border-border bg-surface px-4 py-2 text-sm font-semibold shadow-[0_12px_32px_rgba(29,29,27,0.14)] transition-colors hover:bg-background"
+        className="fixed right-4 top-4 z-40 rounded-full border border-border bg-surface px-4 py-2 text-sm font-semibold shadow-[0_12px_32px_rgba(29,29,27,0.14)] transition-colors hover:bg-background sm:right-5 sm:top-5"
       >
         QR
       </button>
