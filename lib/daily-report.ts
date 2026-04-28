@@ -52,6 +52,23 @@ export function getReportCronSecret() {
   return getReportCronSecrets()[0] ?? "";
 }
 
+export function isAuthorizedDailyReportRequest(request: Request) {
+  const secrets = getReportCronSecrets();
+
+  if (secrets.length === 0) {
+    return false;
+  }
+
+  const authorizationHeader = request.headers.get("authorization");
+  const requestUrl = new URL(request.url);
+  const querySecret = requestUrl.searchParams.get("secret");
+
+  return secrets.some(
+    (secret) =>
+      authorizationHeader === `Bearer ${secret}` || querySecret === secret,
+  );
+}
+
 export function getCurrentDateKey() {
   return new Intl.DateTimeFormat("en-CA", {
     timeZone: REPORT_TIMEZONE,
@@ -59,6 +76,26 @@ export function getCurrentDateKey() {
     month: "2-digit",
     day: "2-digit",
   }).format(new Date());
+}
+
+export function getCurrentReportLocalHour(date = new Date()) {
+  const hour = new Intl.DateTimeFormat("en-US", {
+    timeZone: REPORT_TIMEZONE,
+    hour: "2-digit",
+    hour12: false,
+  }).format(date);
+
+  return Number(hour);
+}
+
+export function getScheduledReportLocalHour() {
+  const configuredHour = Number(process.env.REPORT_SCHEDULED_LOCAL_HOUR ?? 10);
+
+  if (!Number.isInteger(configuredHour) || configuredHour < 0 || configuredHour > 23) {
+    return 10;
+  }
+
+  return configuredHour;
 }
 
 function formatReportDate(date: Date) {

@@ -66,6 +66,7 @@ Variables requeridas:
 - `REPORT_EMAIL_SUBJECT_PREFIX`: asunto base del correo. Por defecto `Resumen almuerzos`.
 - `REPORT_CRON_SECRET`: secreto para proteger el endpoint del cron. En Vercel tambi&eacute;n puedes usar `CRON_SECRET`.
 - `REPORT_TIMEZONE`: por defecto `America/Santiago`.
+- `REPORT_SCHEDULED_LOCAL_HOUR`: hora local para el env&iacute;o autom&aacute;tico. Por defecto `10`.
 
 Disparo manual:
 
@@ -80,9 +81,10 @@ Disparo autom&aacute;tico:
 
 En Vercel:
 
-- `vercel.json` programa el env&iacute;o de lunes a viernes a las `16:00 UTC`.
-- Esa hora equivale a las `12:00` en Santiago durante horario de invierno y a las `13:00` durante horario de verano.
-- Para cambiar la hora, edita `schedule` usando cron UTC.
+- `vercel.json` llama `/api/reports/daily/scheduled` de lunes a viernes a las `13:00 UTC` y `14:00 UTC`.
+- La ruta programada revisa `REPORT_TIMEZONE` y solo cierra/env&iacute;a cuando la hora local es `REPORT_SCHEDULED_LOCAL_HOUR`.
+- Con la configuraci&oacute;n por defecto, el env&iacute;o ocurre siempre a las `10:00` de Santiago, independiente del cambio de horario.
+- En Vercel configura `CRON_SECRET` para que el cron pueda autenticarse autom&aacute;ticamente.
 
 En Railway:
 
