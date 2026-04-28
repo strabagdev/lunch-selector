@@ -66,8 +66,8 @@ Variables requeridas:
 - `REPORT_EMAIL_SUBJECT_PREFIX`: asunto base del correo. Por defecto `Resumen almuerzos`.
 - `REPORT_CRON_SECRET`: secreto para proteger el endpoint del cron. En Vercel tambi&eacute;n puedes usar `CRON_SECRET`.
 - `REPORT_TIMEZONE`: por defecto `America/Santiago`.
-- `REPORT_SCHEDULED_LOCAL_HOUR`: hora local para el env&iacute;o autom&aacute;tico. Temporalmente `16`.
-- `REPORT_SCHEDULED_LOCAL_MINUTE`: minuto local para el env&iacute;o autom&aacute;tico. Temporalmente `30`.
+- `REPORT_SCHEDULED_LOCAL_HOUR`: hora local para el env&iacute;o autom&aacute;tico. Por defecto `9`.
+- `REPORT_SCHEDULED_LOCAL_MINUTE`: minuto local para el env&iacute;o autom&aacute;tico. Por defecto `55`.
 - `REPORT_SCHEDULED_WINDOW_MINUTES`: ventana de tolerancia para Railway Cron. Por defecto `5`.
 - `WHATSAPP_REPORT_ENABLED`: usa `1` para enviar tambi&eacute;n por WhatsApp.
 - `WHATSAPP_ACCESS_TOKEN`: token de Meta WhatsApp Cloud API.
@@ -95,9 +95,9 @@ WhatsApp:
 En Railway:
 
 - Crear un servicio cron con start command `npm run report:scheduled`.
-- Configurar el Cron Schedule en UTC. Para la prueba temporal de `16:30` Santiago, usar `30 20 * * 1-5`.
+- Configurar el Cron Schedule en UTC. Para enviar a las `09:55` Santiago, usar `55 12,13 * * 1-5`.
 - El comando revisa `REPORT_TIMEZONE` y solo cierra/env&iacute;a dentro de la ventana definida por `REPORT_SCHEDULED_LOCAL_HOUR`, `REPORT_SCHEDULED_LOCAL_MINUTE` y `REPORT_SCHEDULED_WINDOW_MINUTES`.
-- Cuando termine la prueba, volver `REPORT_SCHEDULED_LOCAL_HOUR=10`, `REPORT_SCHEDULED_LOCAL_MINUTE=0` y usar `0 13,14 * * 1-5` como schedule UTC para cubrir horario de verano e invierno en Santiago.
+- El doble horario UTC cubre horario de verano e invierno; la compuerta local evita env&iacute;os duplicados.
 
 ## PWA
 
