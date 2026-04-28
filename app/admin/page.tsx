@@ -11,6 +11,7 @@ import {
 import {
   getDailyReportConfigStatus,
 } from "@/lib/daily-report";
+import { closeAndSendDailyReportEmail } from "@/lib/report-email";
 
 export const dynamic = "force-dynamic";
 
@@ -83,34 +84,26 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
   async function sendManualDailyReport() {
     "use server";
 
-    let nextReportStatus = "close-error";
+    let nextReportStatus = "send-error";
 
     try {
-      const todayMenuDay = await prisma.menuDay.findUnique({
-        where: { date: todayDate },
-        select: {
-          id: true,
-          isClosed: true,
-        },
-      });
+      const result = await closeAndSendDailyReportEmail();
 
-      if (!todayMenuDay) {
+      if (result.email.status === "not_configured") {
+        nextReportStatus = "not-configured";
+      } else if (result.close.status === "skipped") {
         nextReportStatus = "no-menu";
-      } else if (todayMenuDay.isClosed) {
+      } else if (result.close.status === "already_closed") {
         nextReportStatus = "already-closed";
-      } else {
-        await prisma.menuDay.update({
-          where: { id: todayMenuDay.id },
-          data: { isClosed: true },
-          select: { id: true },
-        });
-
+      } else if (result.email.status === "sent") {
         revalidatePath("/");
         revalidatePath("/admin");
-        nextReportStatus = "closed";
+        nextReportStatus = "sent";
+      } else {
+        nextReportStatus = "send-skipped";
       }
     } catch (error) {
-      console.error("Close daily requests failed", error);
+      console.error("Daily report send failed", error);
     }
 
     const nextParams = new URLSearchParams();
@@ -269,9 +262,8 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
               Cierre diario
             </h2>
             <p className="text-sm leading-6 text-muted">
-              Por ahora este bot&oacute;n cierra la toma de solicitudes del d&iacute;a
-              actual. M&aacute;s adelante disparar&aacute; tambi&eacute;n el env&iacute;o
-              del correo resumen.
+              Cierra la toma de solicitudes del d&iacute;a actual y env&iacute;a el
+              correo resumen a los destinatarios configurados.
             </p>
             <p className="text-xs leading-5 text-muted">
               Estado de hoy: {isTodayClosed ? "cerrado" : "abierto"}.
@@ -289,7 +281,7 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
               disabled={isTodayClosed}
               className="w-full rounded-[16px] bg-[linear-gradient(180deg,var(--accent),#0a5a54)] px-5 py-3 text-sm font-medium text-white shadow-[0_14px_26px_-16px_rgba(15,23,42,0.28)] transition hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto"
             >
-              Cerrar solicitudes de hoy
+              Cerrar y enviar resumen
             </button>
           </form>
         </div>
@@ -335,9 +327,9 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
           </div>
         </div>
 
-        {reportStatus === "closed" ? (
+        {reportStatus === "sent" ? (
           <div className="mt-4 rounded-[18px] border border-[rgba(15,118,110,0.18)] bg-[rgba(15,118,110,0.06)] px-4 py-3 text-sm text-[var(--accent)]">
-            La toma de solicitudes para hoy fue cerrada correctamente.
+            La toma de solicitudes fue cerrada y el resumen fue enviado correctamente.
           </div>
         ) : null}
 
@@ -356,6 +348,24 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
         {reportStatus === "close-error" ? (
           <div className="mt-4 rounded-[18px] border border-[rgba(220,63,97,0.16)] bg-[rgba(220,63,97,0.06)] px-4 py-3 text-sm text-[var(--danger)]">
             No se pudieron cerrar las solicitudes de hoy. Revisa los logs del despliegue.
+          </div>
+        ) : null}
+
+        {reportStatus === "not-configured" ? (
+          <div className="mt-4 rounded-[18px] border border-[rgba(220,63,97,0.16)] bg-[rgba(220,63,97,0.06)] px-4 py-3 text-sm text-[var(--danger)]">
+            Falta configurar Resend, remitente o destinatarios para enviar el resumen.
+          </div>
+        ) : null}
+
+        {reportStatus === "send-skipped" ? (
+          <div className="mt-4 rounded-[18px] border border-border bg-background px-4 py-3 text-sm text-muted">
+            El d&iacute;a fue cerrado, pero no hab&iacute;a opciones disponibles para enviar.
+          </div>
+        ) : null}
+
+        {reportStatus === "send-error" ? (
+          <div className="mt-4 rounded-[18px] border border-[rgba(220,63,97,0.16)] bg-[rgba(220,63,97,0.06)] px-4 py-3 text-sm text-[var(--danger)]">
+            No se pudo enviar el resumen de hoy. Revisa los logs del despliegue.
           </div>
         ) : null}
 

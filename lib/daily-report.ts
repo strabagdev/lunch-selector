@@ -30,7 +30,29 @@ export type DailyReportSendResult =
       missing: string[];
     };
 
-function getCurrentDateKey() {
+export type DailyRequestsCloseResult =
+  | {
+      status: "closed" | "already_closed";
+      dateKey: string;
+      menuDayId: string;
+    }
+  | {
+      status: "skipped";
+      reason: "no_menu_day" | "not_configured";
+      dateKey: string;
+    };
+
+export function getReportCronSecrets() {
+  return [process.env.REPORT_CRON_SECRET, process.env.CRON_SECRET]
+    .map((value) => value?.trim())
+    .filter((value): value is string => Boolean(value));
+}
+
+export function getReportCronSecret() {
+  return getReportCronSecrets()[0] ?? "";
+}
+
+export function getCurrentDateKey() {
   return new Intl.DateTimeFormat("en-CA", {
     timeZone: REPORT_TIMEZONE,
     year: "numeric",
@@ -70,14 +92,52 @@ export function getDailyReportConfigStatus() {
     missing.push("REPORT_RECIPIENTS");
   }
 
-  if (!process.env.REPORT_CRON_SECRET) {
-    missing.push("REPORT_CRON_SECRET");
-  }
-
   return {
     isReady: missing.length === 0,
     missing,
     recipients: getRecipientsFromEnv(),
+    hasCronSecret: getReportCronSecrets().length > 0,
+  };
+}
+
+export async function closeTodayMenuDayRequests(): Promise<DailyRequestsCloseResult> {
+  const dateKey = getCurrentDateKey();
+  const todayDate = new Date(`${dateKey}T00:00:00.000Z`);
+
+  const menuDay = await prisma.menuDay.findUnique({
+    where: { date: todayDate },
+    select: {
+      id: true,
+      isClosed: true,
+    },
+  });
+
+  if (!menuDay) {
+    return {
+      status: "skipped",
+      reason: "no_menu_day",
+      dateKey,
+    };
+  }
+
+  if (menuDay.isClosed) {
+    return {
+      status: "already_closed",
+      dateKey,
+      menuDayId: menuDay.id,
+    };
+  }
+
+  await prisma.menuDay.update({
+    where: { id: menuDay.id },
+    data: { isClosed: true },
+    select: { id: true },
+  });
+
+  return {
+    status: "closed",
+    dateKey,
+    menuDayId: menuDay.id,
   };
 }
 

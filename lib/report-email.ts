@@ -1,8 +1,16 @@
 import {
+  closeTodayMenuDayRequests,
   getDailyReportConfigStatus,
   getDailyReportSummary,
+  getCurrentDateKey,
+  type DailyRequestsCloseResult,
   type DailyReportSendResult,
 } from "@/lib/daily-report";
+
+export type CloseAndSendDailyReportResult = {
+  close: DailyRequestsCloseResult;
+  email: DailyReportSendResult;
+};
 
 function escapeHtml(value: string) {
   return value
@@ -14,7 +22,9 @@ function escapeHtml(value: string) {
 }
 
 function buildReportSubject(dateLabel: string) {
-  return `Resumen almuerzos - ${dateLabel}`;
+  const subjectPrefix = process.env.REPORT_EMAIL_SUBJECT_PREFIX ?? "Resumen almuerzos";
+
+  return `${subjectPrefix} - ${dateLabel}`;
 }
 
 function buildReportText(dateLabel: string, items: Array<{ name: string; count: number }>) {
@@ -59,12 +69,7 @@ export async function sendDailyReportEmail(): Promise<DailyReportSendResult> {
     return {
       status: "skipped",
       reason: "no_menu_day",
-      dateKey: new Intl.DateTimeFormat("en-CA", {
-        timeZone: process.env.REPORT_TIMEZONE ?? "America/Santiago",
-        year: "numeric",
-        month: "2-digit",
-        day: "2-digit",
-      }).format(new Date()),
+      dateKey: getCurrentDateKey(),
     };
   }
 
@@ -103,5 +108,54 @@ export async function sendDailyReportEmail(): Promise<DailyReportSendResult> {
     summary,
     recipientCount: config.recipients.length,
     deliveryId: responseData.id ?? null,
+  };
+}
+
+export async function closeAndSendDailyReportEmail(): Promise<CloseAndSendDailyReportResult> {
+  const config = getDailyReportConfigStatus();
+  const dateKey = getCurrentDateKey();
+
+  if (!config.isReady) {
+    return {
+      close: {
+        status: "skipped",
+        reason: "not_configured",
+        dateKey,
+      },
+      email: {
+        status: "not_configured",
+        missing: config.missing,
+      },
+    };
+  }
+
+  const close = await closeTodayMenuDayRequests();
+
+  if (close.status === "skipped") {
+    if (close.reason === "not_configured") {
+      return {
+        close,
+        email: {
+          status: "not_configured",
+          missing: config.missing,
+        },
+      };
+    }
+
+    return {
+      close,
+      email: {
+        status: "skipped",
+        reason: close.reason,
+        dateKey: close.dateKey,
+      },
+    };
+  }
+
+  const email = await sendDailyReportEmail();
+
+  return {
+    close,
+    email,
   };
 }

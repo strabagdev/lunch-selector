@@ -1,26 +1,32 @@
-import { sendDailyReportEmail } from "@/lib/report-email";
+import { getReportCronSecrets } from "@/lib/daily-report";
+import { closeAndSendDailyReportEmail } from "@/lib/report-email";
 
 export const dynamic = "force-dynamic";
 
 function isAuthorized(request: Request) {
-  const secret = process.env.REPORT_CRON_SECRET;
+  const secrets = getReportCronSecrets();
 
-  if (!secret) {
+  if (secrets.length === 0) {
     return false;
   }
 
   const authorizationHeader = request.headers.get("authorization");
+  const requestUrl = new URL(request.url);
+  const querySecret = requestUrl.searchParams.get("secret");
 
-  return authorizationHeader === `Bearer ${secret}`;
+  return secrets.some(
+    (secret) =>
+      authorizationHeader === `Bearer ${secret}` || querySecret === secret,
+  );
 }
 
-export async function POST(request: Request) {
+async function runDailyReport(request: Request) {
   if (!isAuthorized(request)) {
     return Response.json({ ok: false, error: "Unauthorized" }, { status: 401 });
   }
 
   try {
-    const result = await sendDailyReportEmail();
+    const result = await closeAndSendDailyReportEmail();
 
     return Response.json({ ok: true, result });
   } catch (error) {
@@ -34,4 +40,12 @@ export async function POST(request: Request) {
       { status: 500 },
     );
   }
+}
+
+export async function GET(request: Request) {
+  return runDailyReport(request);
+}
+
+export async function POST(request: Request) {
+  return runDailyReport(request);
 }

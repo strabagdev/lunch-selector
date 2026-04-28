@@ -63,14 +63,28 @@ Variables requeridas:
 - `RESEND_API_KEY`: API key de Resend.
 - `REPORT_FROM_EMAIL`: remitente verificado en Resend.
 - `REPORT_RECIPIENTS`: correos separados por coma.
-- `REPORT_CRON_SECRET`: secreto para proteger el endpoint del cron.
+- `REPORT_EMAIL_SUBJECT_PREFIX`: asunto base del correo. Por defecto `Resumen almuerzos`.
+- `REPORT_CRON_SECRET`: secreto para proteger el endpoint del cron. En Vercel tambi&eacute;n puedes usar `CRON_SECRET`.
 - `REPORT_TIMEZONE`: por defecto `America/Santiago`.
 
 Disparo manual:
 
-- Desde `/admin` con el bot&oacute;n `Enviar resumen de hoy`.
+- Desde `/admin` con el bot&oacute;n `Cerrar y enviar resumen`.
+- Desde el navegador: `/api/reports/daily?secret=<REPORT_CRON_SECRET>`.
 
-Disparo autom&aacute;tico en Railway:
+Disparo autom&aacute;tico:
+
+- El endpoint `/api/reports/daily` acepta `GET` y `POST`.
+- En cada ejecuci&oacute;n cierra las solicitudes del d&iacute;a actual y luego env&iacute;a el correo.
+- Debe recibir el header `Authorization: Bearer <REPORT_CRON_SECRET>` o el query param `secret`.
+
+En Vercel:
+
+- `vercel.json` programa el env&iacute;o de lunes a viernes a las `16:00 UTC`.
+- Esa hora equivale a las `12:00` en Santiago durante horario de invierno y a las `13:00` durante horario de verano.
+- Para cambiar la hora, edita `schedule` usando cron UTC.
+
+En Railway:
 
 - Crear un Cron Job que haga `POST` a `/api/reports/daily`.
 - Enviar header `Authorization: Bearer <REPORT_CRON_SECRET>`.
