@@ -29,7 +29,13 @@ function coerceText(value: unknown) {
 }
 
 function getApiKey() {
-  return String(process.env.OPENAI_API_KEY ?? "").trim();
+  const apiKey = String(process.env.OPENAI_API_KEY ?? "").trim();
+
+  if (!apiKey || apiKey === "sk-proj-xxx" || apiKey === "sk-xxx") {
+    return "";
+  }
+
+  return apiKey;
 }
 
 function getModel(envName: string) {
@@ -71,8 +77,13 @@ async function requestOpenAiNarrative({
 
   if (!response.ok) {
     const errorText = await response.text().catch(() => "");
+    const safeErrorText = errorText.replaceAll(
+      /sk-[A-Za-z0-9_-]+/g,
+      "sk-***",
+    );
+
     throw new Error(
-      `${errorLabel} (${response.status}): ${errorText || "request_failed"}`,
+      `${errorLabel} (${response.status}): ${safeErrorText || "request_failed"}`,
     );
   }
 

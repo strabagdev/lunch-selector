@@ -1,6 +1,5 @@
 import {
-  getCurrentReportLocalHour,
-  getScheduledReportLocalHour,
+  isWithinScheduledReportWindow,
   isAuthorizedDailyReportRequest,
   REPORT_TIMEZONE,
 } from "@/lib/daily-report";
@@ -13,18 +12,20 @@ export async function GET(request: Request) {
     return Response.json({ ok: false, error: "Unauthorized" }, { status: 401 });
   }
 
-  const currentHour = getCurrentReportLocalHour();
-  const scheduledHour = getScheduledReportLocalHour();
+  const schedule = isWithinScheduledReportWindow();
 
-  if (currentHour !== scheduledHour) {
+  if (!schedule.isWithinWindow) {
     return Response.json({
       ok: true,
       result: {
         status: "skipped",
-        reason: "outside_scheduled_hour",
+        reason: "outside_scheduled_time",
         timezone: REPORT_TIMEZONE,
-        currentHour,
-        scheduledHour,
+        currentHour: schedule.currentHour,
+        currentMinute: schedule.currentMinute,
+        scheduledHour: schedule.scheduledHour,
+        scheduledMinute: schedule.scheduledMinute,
+        windowMinutes: schedule.windowMinutes,
       },
     });
   }

@@ -78,32 +78,84 @@ export function getCurrentDateKey() {
   }).format(new Date());
 }
 
-export function getCurrentReportLocalHour(date = new Date()) {
-  const hour = new Intl.DateTimeFormat("en-US", {
+export function getCurrentReportLocalTime(date = new Date()) {
+  const parts = new Intl.DateTimeFormat("en-US", {
     timeZone: REPORT_TIMEZONE,
     hour: "2-digit",
+    minute: "2-digit",
     hour12: false,
-  }).format(date);
+  }).formatToParts(date);
+  const hour = Number(parts.find((part) => part.type === "hour")?.value ?? 0);
+  const minute = Number(parts.find((part) => part.type === "minute")?.value ?? 0);
 
-  return Number(hour);
+  return { hour, minute };
+}
+
+export function getCurrentReportLocalHour(date = new Date()) {
+  return getCurrentReportLocalTime(date).hour;
 }
 
 export function getScheduledReportLocalHour() {
-  const configuredHour = Number(process.env.REPORT_SCHEDULED_LOCAL_HOUR ?? 10);
+  const configuredHour = Number(process.env.REPORT_SCHEDULED_LOCAL_HOUR ?? 16);
 
   if (!Number.isInteger(configuredHour) || configuredHour < 0 || configuredHour > 23) {
-    return 10;
+    return 16;
   }
 
   return configuredHour;
 }
 
+export function getScheduledReportLocalMinute() {
+  const configuredMinute = Number(process.env.REPORT_SCHEDULED_LOCAL_MINUTE ?? 30);
+
+  if (
+    !Number.isInteger(configuredMinute) ||
+    configuredMinute < 0 ||
+    configuredMinute > 59
+  ) {
+    return 30;
+  }
+
+  return configuredMinute;
+}
+
+export function getScheduledReportWindowMinutes() {
+  const configuredWindow = Number(process.env.REPORT_SCHEDULED_WINDOW_MINUTES ?? 5);
+
+  if (!Number.isInteger(configuredWindow) || configuredWindow < 1 || configuredWindow > 30) {
+    return 5;
+  }
+
+  return configuredWindow;
+}
+
+export function isWithinScheduledReportWindow() {
+  const currentTime = getCurrentReportLocalTime();
+  const scheduledHour = getScheduledReportLocalHour();
+  const scheduledMinute = getScheduledReportLocalMinute();
+  const windowMinutes = getScheduledReportWindowMinutes();
+  const currentMinuteOfDay = currentTime.hour * 60 + currentTime.minute;
+  const scheduledMinuteOfDay = scheduledHour * 60 + scheduledMinute;
+
+  return {
+    isWithinWindow:
+      currentMinuteOfDay >= scheduledMinuteOfDay &&
+      currentMinuteOfDay < scheduledMinuteOfDay + windowMinutes,
+    currentHour: currentTime.hour,
+    currentMinute: currentTime.minute,
+    scheduledHour,
+    scheduledMinute,
+    windowMinutes,
+  };
+}
+
 function formatReportDate(date: Date) {
   return new Intl.DateTimeFormat("es-CL", {
     timeZone: "UTC",
-    weekday: "short",
+    weekday: "long",
     day: "numeric",
-    month: "short",
+    month: "long",
+    year: "numeric",
   }).format(date);
 }
 

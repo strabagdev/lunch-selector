@@ -66,7 +66,14 @@ Variables requeridas:
 - `REPORT_EMAIL_SUBJECT_PREFIX`: asunto base del correo. Por defecto `Resumen almuerzos`.
 - `REPORT_CRON_SECRET`: secreto para proteger el endpoint del cron. En Vercel tambi&eacute;n puedes usar `CRON_SECRET`.
 - `REPORT_TIMEZONE`: por defecto `America/Santiago`.
-- `REPORT_SCHEDULED_LOCAL_HOUR`: hora local para el env&iacute;o autom&aacute;tico. Por defecto `10`.
+- `REPORT_SCHEDULED_LOCAL_HOUR`: hora local para el env&iacute;o autom&aacute;tico. Temporalmente `16`.
+- `REPORT_SCHEDULED_LOCAL_MINUTE`: minuto local para el env&iacute;o autom&aacute;tico. Temporalmente `30`.
+- `REPORT_SCHEDULED_WINDOW_MINUTES`: ventana de tolerancia para Railway Cron. Por defecto `5`.
+- `WHATSAPP_REPORT_ENABLED`: usa `1` para enviar tambi&eacute;n por WhatsApp.
+- `WHATSAPP_ACCESS_TOKEN`: token de Meta WhatsApp Cloud API.
+- `WHATSAPP_PHONE_NUMBER_ID`: ID del n&uacute;mero emisor en WhatsApp Cloud API.
+- `WHATSAPP_REPORT_RECIPIENTS`: n&uacute;meros destino en formato internacional, separados por coma.
+- `WHATSAPP_GRAPH_API_VERSION`: versi&oacute;n de Graph API. Por defecto `v23.0`.
 
 Disparo manual:
 
@@ -76,21 +83,21 @@ Disparo manual:
 Disparo autom&aacute;tico:
 
 - El endpoint `/api/reports/daily` acepta `GET` y `POST`.
-- En cada ejecuci&oacute;n cierra las solicitudes del d&iacute;a actual y luego env&iacute;a el correo.
+- En cada ejecuci&oacute;n cierra las solicitudes del d&iacute;a actual y luego env&iacute;a el correo. Si WhatsApp est&aacute; habilitado, tambi&eacute;n env&iacute;a el mismo resumen por WhatsApp.
 - Debe recibir el header `Authorization: Bearer <REPORT_CRON_SECRET>` o el query param `secret`.
 
-En Vercel:
+WhatsApp:
 
-- `vercel.json` llama `/api/reports/daily/scheduled` de lunes a viernes a las `13:00 UTC` y `14:00 UTC`.
-- La ruta programada revisa `REPORT_TIMEZONE` y solo cierra/env&iacute;a cuando la hora local es `REPORT_SCHEDULED_LOCAL_HOUR`.
-- Con la configuraci&oacute;n por defecto, el env&iacute;o ocurre siempre a las `10:00` de Santiago, independiente del cambio de horario.
-- En Vercel configura `CRON_SECRET` para que el cron pueda autenticarse autom&aacute;ticamente.
+- La integraci&oacute;n usa Meta WhatsApp Cloud API y env&iacute;a texto libre a `/<WHATSAPP_PHONE_NUMBER_ID>/messages`.
+- Para mensajes iniciados por la empresa, Meta puede exigir plantillas aprobadas fuera de la ventana de 24 horas de conversaci&oacute;n.
+- `WHATSAPP_REPORT_RECIPIENTS` debe usar n&uacute;meros con c&oacute;digo de pa&iacute;s y sin espacios, por ejemplo `56912345678`.
 
 En Railway:
 
-- Crear un Cron Job que haga `POST` a `/api/reports/daily`.
-- Enviar header `Authorization: Bearer <REPORT_CRON_SECRET>`.
-- Configurar la hora en UTC.
+- Crear un servicio cron con start command `npm run report:scheduled`.
+- Configurar el Cron Schedule en UTC. Para la prueba temporal de `16:30` Santiago, usar `30 20 * * 1-5`.
+- El comando revisa `REPORT_TIMEZONE` y solo cierra/env&iacute;a dentro de la ventana definida por `REPORT_SCHEDULED_LOCAL_HOUR`, `REPORT_SCHEDULED_LOCAL_MINUTE` y `REPORT_SCHEDULED_WINDOW_MINUTES`.
+- Cuando termine la prueba, volver `REPORT_SCHEDULED_LOCAL_HOUR=10`, `REPORT_SCHEDULED_LOCAL_MINUTE=0` y usar `0 13,14 * * 1-5` como schedule UTC para cubrir horario de verano e invierno en Santiago.
 
 ## PWA
 

@@ -9,6 +9,7 @@
     "start": "next start",
     "postinstall": "prisma generate",
     "lint": "eslint",
+    "report:scheduled": "node --import tsx scripts/run-daily-report.ts",
     "prisma:generate": "prisma generate",
     "prisma:migrate:dev": "prisma migrate dev",
     "prisma:studio": "prisma studio",
