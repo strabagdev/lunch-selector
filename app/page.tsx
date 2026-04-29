@@ -1,12 +1,10 @@
 import { revalidatePath } from "next/cache";
-import Link from "next/link";
 import { redirect } from "next/navigation";
 import {
   getOrCreateHomeMenuNarrative,
 } from "@/lib/lunch-ai";
 import { prisma } from "@/lib/prisma";
 import { HomeFlow } from "./home-flow";
-import { QrLauncher } from "./qr-launcher";
 
 export const dynamic = "force-dynamic";
 const CUTOFF_NOTICE = "Hora de corte 09:00 AM";
@@ -256,17 +254,12 @@ export default async function Home({ searchParams }: HomePageProps) {
 
   return (
     <>
-      <QrLauncher shareUrl={shareUrl} />
-      <Link
-        href="/admin"
-        className="fixed right-4 top-[4.1rem] z-40 rounded-full border border-border bg-surface px-4 py-2 text-sm font-semibold shadow-[0_12px_32px_rgba(29,29,27,0.14)] transition-colors hover:bg-background sm:right-5 sm:top-[5.35rem]"
-      >
-        AD
-      </Link>
-      <main className="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-6 px-4 py-6 sm:gap-8 sm:px-8 sm:py-10 lg:px-10">
+      <main className="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-4 px-3 py-4 sm:gap-8 sm:px-8 sm:py-10 lg:px-10">
         <HomeFlow
           people={people}
+          shareUrl={shareUrl}
           todayLabel={todayLabel}
+          todayDateKey={todayKey}
           todayNarrative={todayMenuNarrative}
           todayMonthKey={todayMonthKey}
           cutoffNotice={CUTOFF_NOTICE}

@@ -1,7 +1,9 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useState, useSyncExternalStore } from "react";
 import type { ReactNode } from "react";
+import { QrLauncher } from "./qr-launcher";
 
 type PersonOption = {
   id: string;
@@ -30,7 +32,9 @@ type MenuDayItem = {
 
 type HomeFlowProps = {
   people: PersonOption[];
+  shareUrl: string;
   todayLabel: string;
+  todayDateKey: string;
   todayNarrative: {
     text: string;
     model: string | null;
@@ -147,7 +151,9 @@ function subscribeToMount() {
 
 export function HomeFlow({
   people,
+  shareUrl,
   todayLabel,
+  todayDateKey,
   todayNarrative,
   todayMonthKey,
   cutoffNotice,
@@ -236,21 +242,27 @@ export function HomeFlow({
               menuDayId: menuDay.id,
               fullDateLabel: menuDay.fullDateLabel,
               shortDateLabel: menuDay.shortDateLabel,
+              dateKey: menuDay.dateKey,
               menuOptionName: selection.menuOptionName,
             },
           ];
         })
     : [];
-  const coveredDaysPreview = selectedPersonCoveredDays.slice(0, COVERED_DAYS_PREVIEW_LIMIT);
-  const remainingCoveredDaysCount = Math.max(
+  const todayCoveredDay =
+    selectedPersonCoveredDays.find((coveredDay) => coveredDay.dateKey === todayDateKey) ?? null;
+  const otherCoveredDays = selectedPersonCoveredDays.filter(
+    (coveredDay) => coveredDay.dateKey !== todayDateKey,
+  );
+  const otherCoveredDaysPreview = otherCoveredDays.slice(0, COVERED_DAYS_PREVIEW_LIMIT);
+  const remainingOtherCoveredDaysCount = Math.max(
     0,
-    selectedPersonCoveredDays.length - coveredDaysPreview.length,
+    otherCoveredDays.length - otherCoveredDaysPreview.length,
   );
   const currentCalendarMonthIndex = monthKeys.findIndex(
     (monthKey) => monthKey === currentCalendarMonthKey,
   );
   const currentCalendarDays = buildMonthCalendarDays(currentCalendarMonthKey, menuDays);
-  const canAdvanceFromStep1 = selectedPersonId.length > 0;
+  const canAdvanceFromStep1 = selectedPersonId.length > 0 && !isTodayClosed;
   const canAdvanceFromStep2 = selectedMenuDay !== null;
   const canAdvanceFromStep3 = selectedMenuOptionId.length > 0;
   const canSubmit =
@@ -260,42 +272,77 @@ export function HomeFlow({
   const currentProgressStep = Math.min(currentStep, 4);
   const currentStepMeta = STEPS[currentProgressStep - 1];
   const hasNoAvailableDates = nextAvailableMenuDay === null;
-
   return (
     <>
-      {hasMounted && currentStep === 1 && todayNarrative ? (
-        <section className="overflow-hidden rounded-[28px] border border-[rgba(15,118,110,0.14)] bg-[radial-gradient(circle_at_top_left,rgba(15,118,110,0.2),transparent_34%),linear-gradient(135deg,rgba(10,90,84,0.96),rgba(15,118,110,0.9)_55%,rgba(219,243,238,0.92)_140%)] p-6 text-white shadow-[0_24px_60px_-36px_rgba(6,78,59,0.55)] sm:p-8">
-          <div className="space-y-4">
-            <div className="flex items-center justify-center gap-3">
-              <span className="inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-white/16 bg-white/12 shadow-[inset_0_1px_0_rgba(255,255,255,0.18)]">
+      {hasMounted && currentStep === 1 && (isTodayClosed || todayNarrative) ? (
+        <section
+          className={
+            isTodayClosed
+              ? "overflow-hidden rounded-[20px] border border-[rgba(220,63,97,0.18)] bg-[linear-gradient(180deg,rgba(255,255,255,0.96),rgba(255,245,247,0.96))] p-4 text-[var(--danger)] shadow-[var(--shadow-soft)] sm:rounded-[26px] sm:p-6"
+              : "overflow-hidden rounded-[28px] border border-[rgba(15,118,110,0.14)] bg-[radial-gradient(circle_at_top_left,rgba(15,118,110,0.2),transparent_34%),linear-gradient(135deg,rgba(10,90,84,0.96),rgba(15,118,110,0.9)_55%,rgba(219,243,238,0.92)_140%)] p-6 text-white shadow-[0_24px_60px_-36px_rgba(6,78,59,0.55)] sm:p-8"
+          }
+        >
+          {isTodayClosed ? (
+            <div className="flex items-center justify-center gap-3 text-center">
+              <span
+                aria-hidden="true"
+                className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-[rgba(220,63,97,0.16)] bg-white/75 shadow-[0_10px_22px_-16px_rgba(127,29,29,0.55)]"
+              >
                 <svg
-                  aria-hidden="true"
-                  viewBox="0 0 24 24"
-                  className="h-6 w-6"
+                  viewBox="0 0 20 20"
+                  className="h-4.5 w-4.5"
                   fill="none"
                   stroke="currentColor"
                   strokeWidth="1.8"
                   strokeLinecap="round"
                   strokeLinejoin="round"
                 >
-                  <path d="M4 13.5V6.8A1.8 1.8 0 0 1 5.8 5h12.4A1.8 1.8 0 0 1 20 6.8v6.7A1.8 1.8 0 0 1 18.2 15.3H9l-4.2 3.2v-3.2H5.8A1.8 1.8 0 0 1 4 13.5Z" />
-                  <path d="M8 9.5h8" />
-                  <path d="M8 12.5h5" />
+                  <circle cx="10" cy="10" r="7" />
+                  <path d="M10 6.5V10l2.2 1.7" />
                 </svg>
               </span>
-              <h2 className="text-center text-[1.35rem] font-semibold tracking-tight sm:text-[2rem]">
-                El menu de hoy ya tiene comentarista.
-              </h2>
+              <div className="min-w-0 text-left">
+                <h2 className="text-base font-semibold leading-5 sm:text-lg">
+                  Solicitudes cerradas
+                </h2>
+                <p className="mt-1 text-xs font-medium leading-5 text-muted">
+                  Puedes programar fechas futuras.
+                </p>
+              </div>
             </div>
+          ) : todayNarrative ? (
+            <div className="space-y-4">
+              <div className="flex items-center justify-center gap-3">
+                <span className="inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-white/16 bg-white/12 shadow-[inset_0_1px_0_rgba(255,255,255,0.18)]">
+                  <svg
+                    aria-hidden="true"
+                    viewBox="0 0 24 24"
+                    className="h-6 w-6"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="1.8"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <path d="M4 13.5V6.8A1.8 1.8 0 0 1 5.8 5h12.4A1.8 1.8 0 0 1 20 6.8v6.7A1.8 1.8 0 0 1 18.2 15.3H9l-4.2 3.2v-3.2H5.8A1.8 1.8 0 0 1 4 13.5Z" />
+                    <path d="M8 9.5h8" />
+                    <path d="M8 12.5h5" />
+                  </svg>
+                </span>
+                <h2 className="text-center text-[1.35rem] font-semibold tracking-tight sm:text-[2rem]">
+                  El menu de hoy ya tiene comentarista.
+                </h2>
+              </div>
 
-            <p className="mx-auto max-w-3xl text-center text-base leading-7 text-white/88 sm:text-lg">
-              {renderBoldMarkdown(todayNarrative.text)}
-            </p>
-          </div>
+              <p className="mx-auto max-w-3xl text-center text-base leading-7 text-white/88 sm:text-lg">
+                {renderBoldMarkdown(todayNarrative.text)}
+              </p>
+            </div>
+          ) : null}
         </section>
       ) : null}
 
-      {hasMounted && currentStep === 1 && !isCutoffNoticeDismissed ? (
+      {hasMounted && currentStep === 1 && !isTodayClosed && !isCutoffNoticeDismissed ? (
         <section className="rounded-[18px] border border-[rgba(220,63,97,0.18)] bg-[rgba(220,63,97,0.08)] px-4 py-3 text-sm font-medium text-[var(--danger)] shadow-[var(--shadow-soft)]">
           <div className="flex items-center justify-center gap-3 text-center">
             <div className="flex flex-1 items-center justify-center gap-3 text-center">
@@ -330,18 +377,18 @@ export function HomeFlow({
         </section>
       ) : null}
 
-      <section className="rounded-[26px] border border-border bg-[radial-gradient(circle_at_top_left,rgba(15,118,110,0.12),transparent_28%),linear-gradient(180deg,rgba(255,255,255,0.96),rgba(245,249,248,0.92))] p-6 shadow-[var(--shadow-card)] sm:p-8">
-        <div className="space-y-4">
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-            <div className="max-w-xl space-y-2.5">
-              <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-accent">
+      <section className="rounded-[20px] border border-border bg-[radial-gradient(circle_at_top_left,rgba(15,118,110,0.12),transparent_28%),linear-gradient(180deg,rgba(255,255,255,0.96),rgba(245,249,248,0.92))] p-4 shadow-[var(--shadow-card)] sm:rounded-[26px] sm:p-8">
+        <div className="space-y-3 sm:space-y-4">
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0 space-y-1 sm:space-y-2.5">
+              <p className="text-[9px] font-semibold uppercase tracking-[0.16em] text-accent sm:text-[10px] sm:tracking-[0.18em]">
                 Seleccion diaria
               </p>
-              <h1 className="text-[1.5rem] font-semibold leading-tight tracking-tight sm:text-4xl xl:text-[2.35rem]">
+              <h1 className="text-[1.2rem] font-semibold leading-tight tracking-tight sm:text-4xl xl:text-[2.35rem]">
                 Registro de almuerzo
               </h1>
             </div>
-            <p className="text-sm font-medium text-accent sm:pt-1 sm:text-right">
+            <p className="max-w-[8.5rem] shrink-0 text-right text-[11px] font-medium leading-4 text-accent sm:max-w-none sm:pt-1 sm:text-sm">
               {todayLabel}
             </p>
           </div>
@@ -356,7 +403,7 @@ export function HomeFlow({
                   {currentStepMeta.title}
                 </p>
               </div>
-              <p className="text-[11px] font-medium text-muted sm:text-xs">
+              <p className="text-[10px] font-medium text-muted sm:text-xs">
                 {Math.round(((currentProgressStep - 1) / (STEPS.length - 1)) * 100)}%
               </p>
             </div>
@@ -375,21 +422,6 @@ export function HomeFlow({
           </div>
         </div>
       </section>
-
-      {currentStep === 1 && isTodayClosed ? (
-        <section className="rounded-[26px] border border-[rgba(220,63,97,0.16)] bg-[linear-gradient(180deg,rgba(255,255,255,0.96),rgba(255,245,247,0.96))] p-6 shadow-[var(--shadow-card)] sm:p-8">
-          <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--danger)]">
-            Solicitudes cerradas
-          </p>
-          <h2 className="mt-2 text-2xl font-semibold tracking-tight">
-            Se cerr&oacute; la toma de solicitudes para hoy.
-          </h2>
-          <p className="mt-3 text-sm leading-6 text-muted">
-            Ya no se reciben solicitudes para la fecha actual, pero puedes seguir
-            programando fechas futuras.
-          </p>
-        </section>
-      ) : null}
 
       <form action={submitSelection}>
         {selectedPersonId ? <input type="hidden" name="personId" value={selectedPersonId} /> : null}
@@ -499,65 +531,89 @@ export function HomeFlow({
             </div>
 
             {selectedPerson ? (
-              <div className="mt-5 rounded-[18px] border border-border bg-[rgba(17,32,28,0.03)] px-4 py-3">
+              <div className="mt-4 max-w-md">
                 {selectedPersonCoveredDays.length > 0 ? (
-                  <details className="group">
-                    <summary className="flex cursor-pointer list-none items-center justify-between gap-3 rounded-[16px] border border-[rgba(15,118,110,0.16)] bg-white/80 px-4 py-3 text-sm font-medium leading-6 text-foreground shadow-[0_10px_24px_-18px_rgba(15,23,42,0.35)] transition-colors hover:bg-white">
-                      <span className="flex items-center gap-3">
-                        <span
-                          aria-hidden="true"
-                          className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-[rgba(15,118,110,0.14)] bg-[rgba(15,118,110,0.08)] text-accent"
-                        >
-                          <svg
-                            viewBox="0 0 20 20"
-                            className="h-4.5 w-4.5"
-                            fill="none"
-                            stroke="currentColor"
-                            strokeWidth="1.8"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                          >
-                            <rect x="3.5" y="4.5" width="13" height="11" rx="2" />
-                            <path d="M6.5 8.5h7" />
-                            <path d="M6.5 11.5h5" />
-                          </svg>
-                        </span>
-                        <span className="text-left">
-                          Ya est&aacute;s cubierto en {selectedPersonCoveredDays.length}{" "}
-                          {selectedPersonCoveredDays.length === 1 ? "fecha" : "fechas"}.
-                          <span className="ml-2 text-base font-semibold text-accent">
-                            Ver detalle
-                          </span>
-                        </span>
-                      </span>
+                  <div className="space-y-3 text-sm">
+                    <div className="flex items-start gap-3">
                       <span
                         aria-hidden="true"
-                        className="text-lg leading-none text-accent transition-transform group-open:rotate-180"
+                        className="mt-0.5 inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[rgba(15,118,110,0.08)] text-accent"
                       >
-                        ˅
-                      </span>
-                    </summary>
-                    <div className="mt-3 flex flex-col gap-1.5">
-                      {coveredDaysPreview.map((coveredDay) => (
-                        <div
-                          key={coveredDay.menuDayId}
-                          className="rounded-[14px] bg-white/70 px-3 py-2"
+                        <svg
+                          viewBox="0 0 20 20"
+                          className="h-4 w-4"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="1.8"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
                         >
-                          <div className="text-[11px] font-medium uppercase tracking-[0.08em] text-muted">
-                            {coveredDay.shortDateLabel}
-                          </div>
-                          <div className="mt-1 text-sm font-medium leading-5 text-foreground">
-                            {coveredDay.menuOptionName}
-                          </div>
-                        </div>
-                      ))}
-                      {remainingCoveredDaysCount > 0 ? (
-                        <p className="text-xs leading-5 text-muted">
-                          y {remainingCoveredDaysCount} m&aacute;s.
-                        </p>
-                      ) : null}
+                          <rect x="3.5" y="4.5" width="13" height="11" rx="2" />
+                          <path d="M6.5 8.5h7" />
+                          <path d="M6.5 11.5h5" />
+                        </svg>
+                      </span>
+                      <span className="min-w-0 text-left">
+                        <span className="block text-[10px] font-semibold uppercase tracking-[0.14em] text-muted">
+                          Hoy
+                        </span>
+                        {todayCoveredDay ? (
+                          <>
+                            <span className="mt-1 block font-semibold leading-5 text-foreground">
+                              {todayCoveredDay.menuOptionName}
+                            </span>
+                            <span className="mt-0.5 block text-xs leading-5 text-muted">
+                              {todayCoveredDay.fullDateLabel}
+                            </span>
+                          </>
+                        ) : (
+                          <span className="mt-1 block font-medium leading-5 text-muted">
+                            No tienes almuerzo registrado para hoy.
+                          </span>
+                        )}
+                      </span>
                     </div>
-                  </details>
+
+                    {otherCoveredDays.length > 0 ? (
+                      <details className="group">
+                        <summary className="flex cursor-pointer list-none items-center justify-between gap-3 border-t border-border pt-3 font-medium leading-5 text-foreground">
+                          <span>
+                            Ver m&aacute;s{" "}
+                            <span className="text-xs font-normal text-muted">
+                              ({otherCoveredDays.length}{" "}
+                              {otherCoveredDays.length === 1 ? "fecha" : "fechas"})
+                            </span>
+                          </span>
+                          <span
+                            aria-hidden="true"
+                            className="text-lg leading-none text-accent transition-transform group-open:rotate-180"
+                          >
+                            ˅
+                          </span>
+                        </summary>
+                        <div className="mt-2 flex flex-col gap-2 pl-10">
+                          {otherCoveredDaysPreview.map((coveredDay) => (
+                            <div
+                              key={coveredDay.menuDayId}
+                              className="text-sm"
+                            >
+                              <div className="text-[11px] font-medium uppercase tracking-[0.08em] text-muted">
+                                {coveredDay.shortDateLabel}
+                              </div>
+                              <div className="mt-0.5 font-medium leading-5 text-foreground">
+                                {coveredDay.menuOptionName}
+                              </div>
+                            </div>
+                          ))}
+                          {remainingOtherCoveredDaysCount > 0 ? (
+                            <p className="text-xs leading-5 text-muted">
+                              y {remainingOtherCoveredDaysCount} m&aacute;s.
+                            </p>
+                          ) : null}
+                        </div>
+                      </details>
+                    ) : null}
+                  </div>
                 ) : (
                   <p className="text-xs leading-5 text-muted">
                     Ya puedes comenzar a registrar tus almuerzos en las fechas disponibles.
@@ -566,15 +622,29 @@ export function HomeFlow({
               </div>
             ) : null}
 
-            <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:justify-end">
-              <button
-                type="button"
-                disabled={!canAdvanceFromStep1}
-                onClick={() => setCurrentStep(2)}
-                className="w-full rounded-[16px] bg-[linear-gradient(180deg,var(--accent),#0a5a54)] px-5 py-3 text-sm font-medium text-white shadow-[0_14px_26px_-16px_rgba(15,23,42,0.28)] transition hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto"
-              >
-                Continuar
-              </button>
+            {!isTodayClosed ? (
+              <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:justify-end">
+                <button
+                  type="button"
+                  disabled={!canAdvanceFromStep1}
+                  onClick={() => setCurrentStep(2)}
+                  className="w-full rounded-[16px] bg-[linear-gradient(180deg,var(--accent),#0a5a54)] px-5 py-3 text-sm font-medium text-white shadow-[0_14px_26px_-16px_rgba(15,23,42,0.28)] transition hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto"
+                >
+                  Continuar
+                </button>
+              </div>
+            ) : null}
+
+            <div className="mt-6 border-t border-border pt-3">
+              <div className="flex gap-2 sm:justify-end">
+                <Link
+                  href="/admin"
+                  className="flex-1 rounded-[14px] border border-[color:var(--border-strong)] bg-[var(--card)] px-4 py-2.5 text-center text-sm font-semibold shadow-[var(--shadow-soft)] transition-colors hover:bg-[var(--surface-strong)] sm:flex-none"
+                >
+                  AD
+                </Link>
+                <QrLauncher shareUrl={shareUrl} />
+              </div>
             </div>
           </section>
         ) : null}
