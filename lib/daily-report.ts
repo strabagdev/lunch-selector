@@ -96,24 +96,24 @@ export function getCurrentReportLocalHour(date = new Date()) {
 }
 
 export function getScheduledReportLocalHour() {
-  const configuredHour = Number(process.env.REPORT_SCHEDULED_LOCAL_HOUR ?? 9);
+  const configuredHour = Number(process.env.REPORT_SCHEDULED_LOCAL_HOUR ?? 21);
 
   if (!Number.isInteger(configuredHour) || configuredHour < 0 || configuredHour > 23) {
-    return 9;
+    return 21;
   }
 
   return configuredHour;
 }
 
 export function getScheduledReportLocalMinute() {
-  const configuredMinute = Number(process.env.REPORT_SCHEDULED_LOCAL_MINUTE ?? 55);
+  const configuredMinute = Number(process.env.REPORT_SCHEDULED_LOCAL_MINUTE ?? 50);
 
   if (
     !Number.isInteger(configuredMinute) ||
     configuredMinute < 0 ||
     configuredMinute > 59
   ) {
-    return 55;
+    return 50;
   }
 
   return configuredMinute;
