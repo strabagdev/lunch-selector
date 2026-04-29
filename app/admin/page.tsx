@@ -291,13 +291,13 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
         <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
           <div className="space-y-2">
             <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-accent">
-              Comentario diario
+              Recomendacion diaria
             </p>
             <h2 className="text-2xl font-semibold tracking-tight">
               Regenerar
             </h2>
             <p className="text-sm leading-6 text-muted">
-              Puedes limpiar el comentario actual para que la portada genere uno nuevo
+              Puedes limpiar la recomendacion actual para que la portada genere una nueva
               para el d&iacute;a en la siguiente carga.
             </p>
           </div>
@@ -308,7 +308,7 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
                 type="submit"
                 className="w-full rounded-[16px] border border-[var(--accent-border)] bg-[var(--accent-soft)] px-5 py-3 text-sm font-medium text-[var(--accent)] transition hover:brightness-95 sm:w-auto"
               >
-                Regenerar comentario del d&iacute;a
+                Regenerar recomendacion del d&iacute;a
               </button>
             </form>
 
@@ -320,7 +320,7 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
                 <p className="mt-1 line-clamp-3 text-xs leading-5 text-foreground">
                   {currentNarrative?.text
                     ? renderBoldMarkdown(currentNarrative.text)
-                    : "Aun no hay comentario diario guardado."}
+                    : "Aun no hay recomendacion diaria guardada."}
                 </p>
               </div>
             </div>
@@ -371,19 +371,19 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
 
         {narrativeStatus === "regenerated" ? (
           <div className="mt-4 rounded-[18px] border border-[rgba(15,118,110,0.18)] bg-[rgba(15,118,110,0.06)] px-4 py-3 text-sm text-[var(--accent)]">
-            El comentario del d&iacute;a se limpiar&aacute; y se regenerar&aacute; en la pr&oacute;xima carga de la portada.
+            La recomendacion del d&iacute;a se limpiar&aacute; y se regenerar&aacute; en la pr&oacute;xima carga de la portada.
           </div>
         ) : null}
 
         {narrativeStatus === "cache_disabled" ? (
           <div className="mt-4 rounded-[18px] border border-border bg-background px-4 py-3 text-sm text-muted">
-            La cache del comentario diario est&aacute; desactivada en este entorno.
+            La cache de la recomendacion diaria est&aacute; desactivada en este entorno.
           </div>
         ) : null}
 
         {narrativeStatus === "error" ? (
           <div className="mt-4 rounded-[18px] border border-[rgba(220,63,97,0.16)] bg-[rgba(220,63,97,0.06)] px-4 py-3 text-sm text-[var(--danger)]">
-            No se pudo regenerar el comentario del d&iacute;a. Revisa los logs del despliegue.
+            No se pudo regenerar la recomendacion del d&iacute;a. Revisa los logs del despliegue.
           </div>
         ) : null}
       </section>

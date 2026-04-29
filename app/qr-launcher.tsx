@@ -37,13 +37,13 @@ export function QrLauncher({ shareUrl }: QrLauncherProps) {
       <button
         type="button"
         onClick={() => setIsOpen(true)}
-        className="flex-1 rounded-[14px] border border-[color:var(--border-strong)] bg-[var(--card)] px-4 py-2.5 text-sm font-semibold shadow-[var(--shadow-soft)] transition-colors hover:bg-[var(--surface-strong)] sm:flex-none"
+        className="flex-1 rounded-[16px] border border-[color:var(--border-strong)] bg-[var(--surface-strong)] px-4 py-2.5 text-sm font-semibold shadow-[var(--shadow-soft)] transition-colors hover:bg-white sm:flex-none"
       >
         QR
       </button>
 
       {isOpen ? (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-[rgba(29,29,27,0.82)] px-6 py-8">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-[rgba(17,24,39,0.78)] px-4 py-6 backdrop-blur-sm">
           <button
             type="button"
             aria-label="Cerrar modal QR"
@@ -51,25 +51,25 @@ export function QrLauncher({ shareUrl }: QrLauncherProps) {
             className="absolute inset-0 cursor-default"
           />
 
-          <div className="relative z-10 flex w-full max-w-2xl flex-col items-center rounded-[2rem] bg-surface px-6 py-8 shadow-[0_30px_90px_rgba(0,0,0,0.25)] sm:px-10">
+          <div className="relative z-10 flex w-full max-w-sm flex-col items-center rounded-[28px] bg-[var(--surface-strong)] px-5 py-5 shadow-[0_30px_90px_rgba(0,0,0,0.25)] sm:max-w-md sm:px-8">
             <div className="w-full text-right">
               <button
                 type="button"
                 onClick={() => setIsOpen(false)}
-                className="rounded-full border border-border px-3 py-1.5 text-sm font-medium transition-colors hover:bg-background"
+                className="rounded-full border border-border bg-white px-3 py-1.5 text-sm font-semibold transition-colors hover:bg-background"
               >
                 Cerrar
               </button>
             </div>
 
-            <div className="mt-3 flex w-full flex-col items-center gap-5">
-              <h2 className="text-center text-2xl font-semibold tracking-tight">
+            <div className="mt-2 flex w-full flex-col items-center gap-4">
+              <h2 className="text-center text-xl font-semibold tracking-tight text-[var(--ink)]">
                 Escanea este QR
               </h2>
               <p className="max-w-xl text-center text-sm leading-6 text-muted">
                 Comparte este acceso directo para abrir el registro de almuerzo.
               </p>
-              <div className="w-full max-w-[420px] rounded-[2rem] bg-white p-4 shadow-[inset_0_0_0_1px_rgba(222,214,200,0.9)]">
+              <div className="w-full max-w-[320px] rounded-[24px] bg-white p-3 shadow-[inset_0_0_0_1px_rgba(23,27,36,0.08)]">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src={qrImageUrl}

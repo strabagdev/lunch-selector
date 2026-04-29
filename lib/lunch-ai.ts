@@ -139,16 +139,15 @@ export async function generateDailyReportNarrative(input: DailyReportNarrativeIn
 
 export function buildHomeMenuNarrativeFallback(input: HomeMenuNarrativeInput) {
   if (input.items.length === 0) {
-    return "La cocina sigue en modo misterio: todavia no hay opciones publicadas para hoy, asi que por ahora el menu esta jugando al escondite.";
+    return "Todavia no hay opciones publicadas para hoy. Cuando aparezcan, te damos una razon clara para elegir cada una.";
   }
 
-  const optionNames = input.items.map((item) => `**${item.name}**`);
-  const readableOptions =
-    optionNames.length === 1
-      ? optionNames[0]
-      : `${optionNames.slice(0, -1).join(", ")} y ${optionNames.at(-1)}`;
+  const reasons = input.items.map(
+    (item) =>
+      `**${item.name}** es buena opcion si quieres algo rico, directo y sin darle demasiadas vueltas a la decision.`,
+  );
 
-  return `Hoy el menu viene con ${readableOptions}. La idea es simple: presentar las opciones con ganas, como si cada plato estuviera haciendo una entrada elegante a la mesa y esperando su momento de gloria.`;
+  return reasons.join(" ");
 }
 
 export async function generateHomeMenuNarrative(input: HomeMenuNarrativeInput) {
@@ -158,13 +157,16 @@ export async function generateHomeMenuNarrative(input: HomeMenuNarrativeInput) {
     model,
     errorLabel: "OpenAI home menu error",
     systemPrompt: [
-      "Eres la voz amistosa, cercana y ligeramente teatral de una app interna para elegir almuerzo.",
-      "Tu objetivo es informar y facilitar la toma de decision de forma rapida, clara y amena.",
+      "Eres un recomendador amistoso y practico de una app interna para elegir almuerzo.",
+      "Tu objetivo es dar una buena razon para elegir cada opcion disponible, ayudando a decidir rapido.",
       "Usa exclusivamente el brief entregado, sin inventar ni agregar informacion.",
-      "Escribe un unico parrafo breve en espanol, de 2 a 4 oraciones.",
-      "Presenta las opciones de manera didactica y facil de comparar, destacando lo mas atractivo de cada plato con descripciones simples, apetitosas y memorables.",
-      "El tono debe ser ingenioso, agil y con humor sutil, como si ayudaras a un equipo con poco tiempo a decidir que comer.",
+      "Escribe un unico parrafo breve en espanol.",
+      "Incluye exactamente una razon por cada plato del brief.",
+      "Cada razon debe mencionar el nombre exacto del plato y explicar en una frase por que podria ser una buena eleccion.",
+      "Las razones deben ser simples, apetitosas, memorables y faciles de comparar.",
+      "El tono debe ser cercano, util y con humor muy sutil, sin sonar exagerado.",
       "Cada vez que menciones el nombre exacto de un plato del brief, encierralo entre doble asterisco para que salga en negrita, por ejemplo **Nombre del plato**.",
+      "No elijas un ganador ni digas cual es mejor; todas las opciones deben tener una razon positiva.",
       "No menciones estados de votacion, resultados, tendencias ni comparaciones competitivas entre opciones.",
       "No incluyas cantidades, numeros, conteos, volumenes ni referencias a pedidos.",
       "No uses listas, formato JSON ni menciones sobre inteligencia artificial o modelos.",

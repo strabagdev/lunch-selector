@@ -137,10 +137,10 @@ export default async function AdminPeoplePage() {
             Todav&iacute;a no hay personas registradas.
           </div>
         ) : (
-          <div className="mt-6 overflow-hidden rounded-3xl border border-border bg-background">
-            <div className="grid grid-cols-[minmax(0,1fr)_auto] gap-3 border-b border-border px-4 py-3 text-[11px] font-semibold uppercase tracking-[0.14em] text-muted">
+          <div className="mt-6 overflow-hidden rounded-[22px] border border-border bg-background">
+            <div className="grid grid-cols-[minmax(0,1fr)_2.25rem] items-center gap-3 border-b border-border px-4 py-2.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-muted">
               <span>Nombre</span>
-              <span>Acciones</span>
+              <span className="sr-only">Acciones</span>
             </div>
             <div className="divide-y divide-border">
               {people.map((person) => (

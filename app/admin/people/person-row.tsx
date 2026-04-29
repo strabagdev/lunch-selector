@@ -23,8 +23,8 @@ export function PersonRow({
 
   return (
     <div
-      className={`px-4 py-4 transition-colors ${
-        isEditing ? "bg-[rgba(215,243,239,0.28)]" : "bg-transparent"
+      className={`px-4 transition-colors ${
+        isEditing ? "bg-[var(--accent-soft)]/40 py-3" : "bg-transparent py-1.5"
       }`}
     >
       <form
@@ -32,13 +32,17 @@ export function PersonRow({
           await updateAction(formData);
           setIsEditing(false);
         }}
-        className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center"
+        className={`grid gap-2 ${
+          isEditing
+            ? "sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center"
+            : "grid-cols-[minmax(0,1fr)_2.25rem] items-center"
+        }`}
       >
         <input type="hidden" name="personId" value={personId} />
-        <div className="space-y-3">
+        <div className={isEditing ? "space-y-2" : "min-w-0"}>
           {isEditing ? (
             <div className="flex flex-wrap items-center gap-2">
-              <span className="inline-flex rounded-full bg-[var(--accent-soft)] px-2.5 py-1 text-[11px] font-semibold text-[var(--accent)]">
+              <span className="inline-flex rounded-full bg-white/75 px-2.5 py-1 text-[11px] font-semibold text-[var(--accent)]">
                 Editando
               </span>
             </div>
@@ -59,23 +63,27 @@ export function PersonRow({
                   }
                 }}
                 onFocus={() => setIsEditing(true)}
-                className="h-11 w-full rounded-[16px] border border-[var(--accent-border)] bg-white px-4 text-base font-medium shadow-[inset_0_1px_0_rgba(255,255,255,0.75)] outline-none transition-colors sm:text-sm"
+                className="h-10 w-full rounded-[14px] border border-[var(--accent-border)] bg-white px-3 text-base font-medium shadow-[inset_0_1px_0_rgba(255,255,255,0.75)] outline-none transition-colors sm:text-sm"
               />
             ) : (
-              <div className="flex min-h-[44px] items-center rounded-[16px] border border-transparent bg-transparent px-1">
-                <span className="text-sm font-medium">{personName}</span>
+              <div className="flex min-h-9 min-w-0 items-center">
+                <span className="truncate text-sm font-medium">{personName}</span>
               </div>
             )}
           </label>
         </div>
 
-        <div className="flex flex-wrap items-center justify-start gap-2 lg:justify-end lg:self-start">
+        <div
+          className={`flex items-center gap-2 ${
+            isEditing ? "flex-wrap justify-start sm:justify-end" : "justify-end"
+          }`}
+        >
           {isEditing ? (
             <>
               <button
                 type="submit"
                 disabled={!isDirty || !normalizedDraft}
-                className="order-1 rounded-[14px] bg-[linear-gradient(180deg,var(--accent),#0a5a54)] px-4 py-2.5 text-sm font-medium text-white shadow-[0_12px_24px_-16px_rgba(15,23,42,0.32)] transition hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-50"
+                className="order-1 rounded-[14px] bg-[linear-gradient(135deg,var(--accent),var(--accent-strong))] px-4 py-2.5 text-sm font-medium text-white shadow-[0_12px_24px_-16px_rgba(15,23,42,0.32)] transition hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 Guardar
               </button>
@@ -100,10 +108,24 @@ export function PersonRow({
           ) : (
             <button
               type="button"
+              aria-label={`Editar ${personName}`}
+              title="Editar"
               onClick={() => setIsEditing(true)}
-              className="rounded-[14px] border border-[color:var(--border-strong)] bg-[var(--card)] px-4 py-2.5 text-sm font-medium transition-colors hover:bg-[var(--surface-strong)]"
+              className="inline-flex h-9 w-9 items-center justify-center rounded-[12px] border border-transparent text-muted transition-colors hover:border-[color:var(--border-strong)] hover:bg-[var(--surface-strong)] hover:text-[var(--accent)]"
             >
-              Editar
+              <svg
+                aria-hidden="true"
+                viewBox="0 0 20 20"
+                className="h-4.5 w-4.5"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.8"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <path d="M11.8 4.2 15.8 8.2" />
+                <path d="M13.5 2.8a1.4 1.4 0 0 1 2 0l1.7 1.7a1.4 1.4 0 0 1 0 2L7.4 16.3 3.5 17.4l1.1-3.9 8.9-10.7Z" />
+              </svg>
             </button>
           )}
         </div>

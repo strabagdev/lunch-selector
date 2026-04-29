@@ -254,7 +254,7 @@ export default async function Home({ searchParams }: HomePageProps) {
 
   return (
     <>
-      <main className="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-4 px-3 py-4 sm:gap-8 sm:px-8 sm:py-10 lg:px-10">
+      <main className="mx-auto flex min-h-dvh w-full max-w-[34rem] flex-1 flex-col gap-3 px-3 py-3 sm:gap-5 sm:px-5 sm:py-6">
         <HomeFlow
           people={people}
           shareUrl={shareUrl}

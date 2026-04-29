@@ -6,8 +6,11 @@ export const dynamic = "force-dynamic";
 type AdminMenuDaysPageProps = {
   searchParams: Promise<{
     month?: string | string[] | undefined;
+    page?: string | string[] | undefined;
   }>;
 };
+
+const HISTORY_PAGE_SIZE = 8;
 
 function formatMenuDate(date: Date) {
   return new Intl.DateTimeFormat("es-CL", {
@@ -22,6 +25,12 @@ function formatMenuDate(date: Date) {
 function getMonthParam(value: string | string[] | undefined) {
   const month = Array.isArray(value) ? value[0] : value;
   return month && /^\d{4}-\d{2}$/.test(month) ? month : undefined;
+}
+
+function getPageParam(value: string | string[] | undefined) {
+  const page = Array.isArray(value) ? value[0] : value;
+  const pageNumber = Number(page);
+  return Number.isInteger(pageNumber) && pageNumber > 0 ? pageNumber : 1;
 }
 
 function getMonthKey(date: Date) {
@@ -46,6 +55,24 @@ function formatMonthHeading(monthKey: string) {
   }).format(getMonthStart(monthKey));
 }
 
+function getHistoryHref(monthKey: string, page: number) {
+  const params = new URLSearchParams({ month: monthKey });
+
+  if (page > 1) {
+    params.set("page", String(page));
+  }
+
+  return `/admin/menu-days?${params.toString()}`;
+}
+
+function getVisiblePages(currentPage: number, totalPages: number) {
+  const pages = new Set([1, totalPages, currentPage - 1, currentPage, currentPage + 1]);
+
+  return Array.from(pages)
+    .filter((page) => page >= 1 && page <= totalPages)
+    .sort((left, right) => left - right);
+}
+
 export default async function AdminMenuDaysPage({
   searchParams,
 }: AdminMenuDaysPageProps) {
@@ -59,6 +86,7 @@ export default async function AdminMenuDaysPage({
   }).format(today);
   const todayDate = new Date(`${todayKey}T00:00:00.000Z`);
   const requestedMonth = getMonthParam(resolvedSearchParams.month);
+  const requestedPage = getPageParam(resolvedSearchParams.page);
 
   const [oldestPastMenuDay, latestPastMenuDay] = await Promise.all([
     prisma.menuDay.findFirst({
@@ -98,16 +126,28 @@ export default async function AdminMenuDaysPage({
   const historyMonthEnd =
     nextMonthStart && nextMonthStart < todayDate ? nextMonthStart : todayDate;
 
-  const pastMenuDays = !selectedMonthKey || !monthStart || !nextMonthStart || !historyMonthEnd
-    ? []
-    : await prisma.menuDay.findMany({
-        where: {
+  const historyWhere =
+    !selectedMonthKey || !monthStart || !nextMonthStart || !historyMonthEnd
+      ? null
+      : {
           date: {
             gte: monthStart,
             lt: historyMonthEnd,
           },
-        },
+        };
+  const totalPastMenuDays = historyWhere
+    ? await prisma.menuDay.count({
+        where: historyWhere,
+      })
+    : 0;
+  const totalPages = Math.max(1, Math.ceil(totalPastMenuDays / HISTORY_PAGE_SIZE));
+  const currentPage = Math.min(requestedPage, totalPages);
+  const pastMenuDays = historyWhere
+    ? await prisma.menuDay.findMany({
+        where: historyWhere,
         orderBy: { date: "desc" },
+        skip: (currentPage - 1) * HISTORY_PAGE_SIZE,
+        take: HISTORY_PAGE_SIZE,
         include: {
           options: {
             orderBy: [{ sortOrder: "asc" }, { name: "asc" }],
@@ -123,7 +163,8 @@ export default async function AdminMenuDaysPage({
             },
           },
         },
-      });
+      })
+    : [];
 
   const previousMonthKey =
     selectedMonthKey && oldestMonthKey && selectedMonthKey > oldestMonthKey
@@ -158,7 +199,7 @@ export default async function AdminMenuDaysPage({
               <div className="flex gap-3">
                 {previousMonthKey ? (
                   <Link
-                    href={`/admin/menu-days?month=${previousMonthKey}`}
+                    href={getHistoryHref(previousMonthKey, 1)}
                     className="rounded-2xl border border-border bg-background px-4 py-2.5 text-sm font-medium transition-colors hover:bg-surface"
                   >
                     Mes anterior
@@ -166,7 +207,7 @@ export default async function AdminMenuDaysPage({
                 ) : null}
                 {nextMonthKey ? (
                   <Link
-                    href={`/admin/menu-days?month=${nextMonthKey}`}
+                    href={getHistoryHref(nextMonthKey, 1)}
                     className="rounded-2xl border border-border bg-background px-4 py-2.5 text-sm font-medium transition-colors hover:bg-surface"
                   >
                     Mes siguiente
@@ -181,6 +222,54 @@ export default async function AdminMenuDaysPage({
               </div>
             ) : (
               <>
+                <div className="flex flex-col gap-3 rounded-[20px] border border-border bg-background px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+                  <p className="text-xs font-medium text-muted">
+                    Mostrando {(currentPage - 1) * HISTORY_PAGE_SIZE + 1}-
+                    {Math.min(currentPage * HISTORY_PAGE_SIZE, totalPastMenuDays)} de{" "}
+                    {totalPastMenuDays}
+                  </p>
+
+                  {totalPages > 1 ? (
+                    <nav
+                      aria-label="Paginacion del historico"
+                      className="flex flex-wrap items-center gap-1.5"
+                    >
+                      {currentPage > 1 ? (
+                        <Link
+                          href={getHistoryHref(selectedMonthKey, currentPage - 1)}
+                          className="rounded-xl border border-border bg-white px-3 py-2 text-xs font-semibold transition-colors hover:bg-surface"
+                        >
+                          Anterior
+                        </Link>
+                      ) : null}
+
+                      {getVisiblePages(currentPage, totalPages).map((page) => (
+                        <Link
+                          key={page}
+                          href={getHistoryHref(selectedMonthKey, page)}
+                          aria-current={page === currentPage ? "page" : undefined}
+                          className={`flex h-8 min-w-8 items-center justify-center rounded-xl border px-2 text-xs font-semibold transition-colors ${
+                            page === currentPage
+                              ? "border-[var(--accent-border)] bg-[var(--accent-soft)] text-[var(--accent)]"
+                              : "border-border bg-white text-foreground hover:bg-surface"
+                          }`}
+                        >
+                          {page}
+                        </Link>
+                      ))}
+
+                      {currentPage < totalPages ? (
+                        <Link
+                          href={getHistoryHref(selectedMonthKey, currentPage + 1)}
+                          className="rounded-xl border border-border bg-white px-3 py-2 text-xs font-semibold transition-colors hover:bg-surface"
+                        >
+                          Siguiente
+                        </Link>
+                      ) : null}
+                    </nav>
+                  ) : null}
+                </div>
+
                 <div className="space-y-4 sm:hidden">
                   {pastMenuDays.map((menuDay) => (
                     <article
