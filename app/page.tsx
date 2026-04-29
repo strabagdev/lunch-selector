@@ -36,6 +36,15 @@ function formatShortMenuDate(date: Date) {
   }).format(date);
 }
 
+function formatWizardDate(date: Date) {
+  return new Intl.DateTimeFormat("es-CL", {
+    timeZone: "UTC",
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  }).format(date);
+}
+
 function getTodayKey() {
   return new Intl.DateTimeFormat("en-CA", {
     timeZone: "America/Santiago",
@@ -108,6 +117,7 @@ export default async function Home({ searchParams }: HomePageProps) {
   const todayMonthKey = todayKey.slice(0, 7);
   const todayDate = new Date(`${todayKey}T00:00:00.000Z`);
   const todayLabel = formatMenuDate(todayDate);
+  const todayWizardLabel = formatWizardDate(todayDate);
 
   const [people, availableMenuDays] = await Promise.all([
     prisma.person.findMany({
@@ -258,7 +268,7 @@ export default async function Home({ searchParams }: HomePageProps) {
         <HomeFlow
           people={people}
           shareUrl={shareUrl}
-          todayLabel={todayLabel}
+          todayWizardLabel={todayWizardLabel}
           todayDateKey={todayKey}
           todayNarrative={todayMenuNarrative}
           todayMonthKey={todayMonthKey}

@@ -33,7 +33,7 @@ type MenuDayItem = {
 type HomeFlowProps = {
   people: PersonOption[];
   shareUrl: string;
-  todayLabel: string;
+  todayWizardLabel: string;
   todayDateKey: string;
   todayNarrative: {
     text: string;
@@ -80,6 +80,20 @@ const CALENDAR_MONTHS = [
   "noviembre",
   "diciembre",
 ];
+
+function formatWizardDateLabel(dateKey: string) {
+  const date = new Date(`${dateKey}T00:00:00.000Z`);
+
+  return new Intl.DateTimeFormat("es-CL", {
+    timeZone: "UTC",
+    weekday: "short",
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  })
+    .format(date)
+    .replace(".", "");
+}
 
 function getMonthKey(dateKey: string) {
   return dateKey.slice(0, 7);
@@ -152,7 +166,7 @@ function subscribeToMount() {
 export function HomeFlow({
   people,
   shareUrl,
-  todayLabel,
+  todayWizardLabel,
   todayDateKey,
   todayNarrative,
   todayMonthKey,
@@ -179,6 +193,7 @@ export function HomeFlow({
   const hasMounted = useSyncExternalStore(subscribeToMount, () => true, () => false);
   const [isCutoffNoticeDismissed, setIsCutoffNoticeDismissed] = useState(false);
   const [cutoffNoticeProgress, setCutoffNoticeProgress] = useState(100);
+  const [isNarrativeExpanded, setIsNarrativeExpanded] = useState(false);
 
   useEffect(() => {
     if (!hasMounted || currentStep !== 1 || isCutoffNoticeDismissed) {
@@ -272,6 +287,9 @@ export function HomeFlow({
   const currentProgressStep = Math.min(currentStep, 4);
   const currentStepMeta = STEPS[currentProgressStep - 1];
   const hasNoAvailableDates = nextAvailableMenuDay === null;
+  const wizardDateLabel = selectedMenuDay
+    ? formatWizardDateLabel(selectedMenuDay.dateKey)
+    : `Hoy, ${todayWizardLabel}`;
   return (
     <>
       {hasMounted && currentStep === 1 && (isTodayClosed || todayNarrative) ? (
@@ -311,30 +329,64 @@ export function HomeFlow({
               </div>
             </div>
           ) : todayNarrative ? (
-            <div className="space-y-4">
-              <div className="flex items-center justify-center gap-3">
-                <span className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-[18px] border border-white/15 bg-white/12 shadow-[inset_0_1px_0_rgba(255,255,255,0.18)]">
+            <div className="space-y-3">
+              <button
+                type="button"
+                onClick={() => setIsNarrativeExpanded((current) => !current)}
+                className="flex w-full items-center justify-between gap-3 text-left"
+                aria-expanded={isNarrativeExpanded}
+              >
+                <span className="flex min-w-0 items-center gap-3">
+                  <span className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-[18px] border border-white/15 bg-white/12 shadow-[inset_0_1px_0_rgba(255,255,255,0.18)]">
+                    <svg
+                      aria-hidden="true"
+                      viewBox="0 0 24 24"
+                      className="h-5.5 w-5.5"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="1.8"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      <path d="M4 13.5V6.8A1.8 1.8 0 0 1 5.8 5h12.4A1.8 1.8 0 0 1 20 6.8v6.7A1.8 1.8 0 0 1 18.2 15.3H9l-4.2 3.2v-3.2H5.8A1.8 1.8 0 0 1 4 13.5Z" />
+                      <path d="M8 9.5h8" />
+                      <path d="M8 12.5h5" />
+                    </svg>
+                  </span>
+                  <span className="min-w-0">
+                    <span className="block text-[0.95rem] font-semibold leading-5 tracking-tight sm:text-[1.1rem]">
+                      Una razon para cada opcion
+                    </span>
+                    <span className="mt-0.5 block text-xs font-medium text-white/70">
+                      {isNarrativeExpanded ? "Ocultar recomendacion" : "Ver recomendacion"}
+                    </span>
+                  </span>
+                </span>
+                <span
+                  aria-hidden="true"
+                  className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white/10 text-white transition-transform"
+                >
                   <svg
-                    aria-hidden="true"
-                    viewBox="0 0 24 24"
-                    className="h-6 w-6"
+                    viewBox="0 0 20 20"
+                    className={`h-4 w-4 transition-transform ${
+                      isNarrativeExpanded ? "rotate-180" : ""
+                    }`}
                     fill="none"
                     stroke="currentColor"
                     strokeWidth="1.8"
                     strokeLinecap="round"
                     strokeLinejoin="round"
                   >
-                    <path d="M4 13.5V6.8A1.8 1.8 0 0 1 5.8 5h12.4A1.8 1.8 0 0 1 20 6.8v6.7A1.8 1.8 0 0 1 18.2 15.3H9l-4.2 3.2v-3.2H5.8A1.8 1.8 0 0 1 4 13.5Z" />
-                    <path d="M8 9.5h8" />
-                    <path d="M8 12.5h5" />
+                    <path d="m5 8 5 5 5-5" />
                   </svg>
                 </span>
-                <h2 className="text-center text-[1.2rem] font-semibold tracking-tight sm:text-[1.55rem]">
-                  Una razon para cada opcion.
-                </h2>
-              </div>
+              </button>
 
-              <p className="mx-auto max-w-3xl text-center text-sm leading-6 text-white/88 sm:text-base">
+              <p
+                className={`mx-auto max-w-3xl text-sm leading-6 text-white/88 sm:text-base ${
+                  isNarrativeExpanded ? "" : "line-clamp-2"
+                }`}
+              >
                 {renderBoldMarkdown(todayNarrative.text)}
               </p>
             </div>
@@ -388,8 +440,8 @@ export function HomeFlow({
                 Registro de almuerzo
               </h1>
             </div>
-            <p className="max-w-[8.5rem] shrink-0 rounded-full bg-[var(--accent-soft)] px-3 py-1.5 text-right text-[10px] font-semibold leading-4 text-[var(--accent-strong)] sm:max-w-none sm:text-xs">
-              {todayLabel}
+            <p className="shrink-0 whitespace-nowrap rounded-full bg-[var(--accent-soft)] px-3 py-1.5 text-right text-[11px] font-semibold leading-none text-[var(--accent-strong)] sm:text-xs">
+              {wizardDateLabel}
             </p>
           </div>
 

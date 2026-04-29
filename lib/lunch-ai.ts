@@ -143,8 +143,7 @@ export function buildHomeMenuNarrativeFallback(input: HomeMenuNarrativeInput) {
   }
 
   const reasons = input.items.map(
-    (item) =>
-      `**${item.name}** es buena opcion si quieres algo rico, directo y sin darle demasiadas vueltas a la decision.`,
+    (item) => `**${item.name}**: opcion simple y rica para decidir rapido.`,
   );
 
   return reasons.join(" ");
@@ -158,18 +157,19 @@ export async function generateHomeMenuNarrative(input: HomeMenuNarrativeInput) {
     errorLabel: "OpenAI home menu error",
     systemPrompt: [
       "Eres un recomendador amistoso y practico de una app interna para elegir almuerzo.",
-      "Tu objetivo es dar una buena razon para elegir cada opcion disponible, ayudando a decidir rapido.",
+      "Tu objetivo es dar una sola razon breve para elegir cada opcion disponible.",
       "Usa exclusivamente el brief entregado, sin inventar ni agregar informacion.",
-      "Escribe un unico parrafo breve en espanol.",
+      "Escribe un unico parrafo minimalista en espanol.",
       "Incluye exactamente una razon por cada plato del brief.",
-      "Cada razon debe mencionar el nombre exacto del plato y explicar en una frase por que podria ser una buena eleccion.",
-      "Las razones deben ser simples, apetitosas, memorables y faciles de comparar.",
-      "El tono debe ser cercano, util y con humor muy sutil, sin sonar exagerado.",
+      "Cada razon debe tener maximo 10 palabras despues del nombre del plato.",
+      "Usa formato: **Nombre del plato**: razon breve. **Otro plato**: razon breve.",
+      "Las razones deben ser concretas, apetitosas y faciles de comparar.",
+      "El tono debe ser cercano y util, sin adornos.",
       "Cada vez que menciones el nombre exacto de un plato del brief, encierralo entre doble asterisco para que salga en negrita, por ejemplo **Nombre del plato**.",
       "No elijas un ganador ni digas cual es mejor; todas las opciones deben tener una razon positiva.",
       "No menciones estados de votacion, resultados, tendencias ni comparaciones competitivas entre opciones.",
       "No incluyas cantidades, numeros, conteos, volumenes ni referencias a pedidos.",
-      "No uses listas, formato JSON ni menciones sobre inteligencia artificial o modelos.",
+      "No uses listas, introducciones, cierres, formato JSON ni menciones sobre inteligencia artificial o modelos.",
     ].join(" "),
     brief: buildHomeMenuBrief(input),
   });
