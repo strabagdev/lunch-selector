@@ -277,7 +277,8 @@ export function HomeFlow({
     (monthKey) => monthKey === currentCalendarMonthKey,
   );
   const currentCalendarDays = buildMonthCalendarDays(currentCalendarMonthKey, menuDays);
-  const canAdvanceFromStep1 = selectedPersonId.length > 0 && !isTodayClosed;
+  const hasNoAvailableDates = nextAvailableMenuDay === null;
+  const canAdvanceFromStep1 = selectedPersonId.length > 0 && !hasNoAvailableDates;
   const canAdvanceFromStep2 = selectedMenuDay !== null;
   const canAdvanceFromStep3 = selectedMenuOptionId.length > 0;
   const canSubmit =
@@ -286,7 +287,6 @@ export function HomeFlow({
     selectedMenuOptionId.length > 0;
   const currentProgressStep = Math.min(currentStep, 4);
   const currentStepMeta = STEPS[currentProgressStep - 1];
-  const hasNoAvailableDates = nextAvailableMenuDay === null;
   const wizardDateLabel = selectedMenuDay
     ? formatWizardDateLabel(selectedMenuDay.dateKey)
     : `Hoy, ${todayWizardLabel}`;
@@ -674,18 +674,16 @@ export function HomeFlow({
               </div>
             ) : null}
 
-            {!isTodayClosed ? (
-              <div className="mt-7 flex flex-col gap-3 sm:flex-row sm:justify-end">
-                <button
-                  type="button"
-                  disabled={!canAdvanceFromStep1}
-                  onClick={() => setCurrentStep(2)}
-                  className="w-full rounded-[20px] bg-[linear-gradient(135deg,var(--accent),var(--accent-strong))] px-5 py-3.5 text-sm font-semibold text-white shadow-[0_16px_30px_-18px_rgba(8,90,113,0.75)] transition hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto"
-                >
-                  Continuar
-                </button>
-              </div>
-            ) : null}
+            <div className="mt-7 flex flex-col gap-3 sm:flex-row sm:justify-end">
+              <button
+                type="button"
+                disabled={!canAdvanceFromStep1}
+                onClick={() => setCurrentStep(2)}
+                className="w-full rounded-[20px] bg-[linear-gradient(135deg,var(--accent),var(--accent-strong))] px-5 py-3.5 text-sm font-semibold text-white shadow-[0_16px_30px_-18px_rgba(8,90,113,0.75)] transition hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto"
+              >
+                {isTodayClosed ? "Programar otras fechas" : "Continuar"}
+              </button>
+            </div>
 
             <div className="mt-5 border-t border-border pt-3">
               <div className="flex gap-2 sm:justify-end">
