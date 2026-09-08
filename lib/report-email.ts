@@ -13,6 +13,12 @@ export type CloseAndSendDailyReportResult = {
   whatsapp: DailyReportWhatsAppSendResult;
 };
 
+type CloseAndSendDailyReportDependencies = {
+  closeTodayMenuDayRequests: () => Promise<DailyRequestsCloseResult>;
+  sendDailyReportEmail: () => Promise<DailyReportSendResult>;
+  sendDailyReportWhatsApp: () => Promise<DailyReportWhatsAppSendResult>;
+};
+
 type DailyReportWhatsAppSendResult =
   | {
       status: "sent";
@@ -332,29 +338,11 @@ export async function sendDailyReportWhatsApp(): Promise<DailyReportWhatsAppSend
   };
 }
 
-export async function closeAndSendDailyReportEmail(): Promise<CloseAndSendDailyReportResult> {
-  const config = getDailyReportConfigStatus();
-  const dateKey = getCurrentDateKey();
-
-  if (!config.isReady) {
-    return {
-      close: {
-        status: "skipped",
-        reason: "not_configured",
-        dateKey,
-      },
-      email: {
-        status: "not_configured",
-        missing: config.missing,
-      },
-      whatsapp: {
-        status: "skipped",
-        reason: "disabled",
-        dateKey,
-      },
-    };
-  }
-
+export async function runCloseAndSendDailyReportEmail({
+  closeTodayMenuDayRequests,
+  sendDailyReportEmail,
+  sendDailyReportWhatsApp,
+}: CloseAndSendDailyReportDependencies): Promise<CloseAndSendDailyReportResult> {
   const close = await closeTodayMenuDayRequests();
 
   if (close.status === "skipped") {
@@ -363,12 +351,11 @@ export async function closeAndSendDailyReportEmail(): Promise<CloseAndSendDailyR
         close,
         email: {
           status: "not_configured",
-          missing: config.missing,
+          missing: [],
         },
         whatsapp: {
-          status: "skipped",
-          reason: "disabled",
-          dateKey: close.dateKey,
+          status: "not_configured",
+          missing: [],
         },
       };
     }
@@ -396,4 +383,12 @@ export async function closeAndSendDailyReportEmail(): Promise<CloseAndSendDailyR
     email,
     whatsapp,
   };
+}
+
+export async function closeAndSendDailyReportEmail(): Promise<CloseAndSendDailyReportResult> {
+  return runCloseAndSendDailyReportEmail({
+    closeTodayMenuDayRequests,
+    sendDailyReportEmail,
+    sendDailyReportWhatsApp,
+  });
 }

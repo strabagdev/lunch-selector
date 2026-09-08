@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import {
   getOrCreateHomeMenuNarrative,
 } from "@/lib/lunch-ai";
+import { submitLunchSelection } from "@/lib/lunch-selection";
 import { prisma } from "@/lib/prisma";
 import { HomeFlow } from "./home-flow";
 
@@ -191,58 +192,16 @@ export default async function Home({ searchParams }: HomePageProps) {
     const menuDayId = String(formData.get("menuDayId") ?? "");
     const menuOptionId = String(formData.get("menuOptionId") ?? "");
 
-    if (!personId || !menuDayId || !menuOptionId) {
-      return;
-    }
-
-    const [person, selectedMenuDay, option] = await Promise.all([
-      prisma.person.findUnique({
-        where: { id: personId },
-        select: { id: true, isActive: true },
-      }),
-      prisma.menuDay.findUnique({
-        where: { id: menuDayId },
-        select: { id: true, date: true },
-      }),
-      prisma.menuOption.findFirst({
-        where: {
-          id: menuOptionId,
-          menuDayId,
-          isAvailable: true,
-        },
-        select: { id: true },
-      }),
-    ]);
-
-    if (
-      !person?.isActive ||
-      !selectedMenuDay ||
-      !option ||
-      getDateKey(selectedMenuDay.date) < todayKey ||
-      (getDateKey(selectedMenuDay.date) === todayKey && isTodayClosed)
-    ) {
-      return;
-    }
-
-    await prisma.lunchSelection.upsert({
-      where: {
-        personId_menuDayId: {
-          personId,
-          menuDayId,
-        },
-      },
-      update: {
-        menuOptionId,
-      },
-      create: {
-        personId,
-        menuDayId,
-        menuOptionId,
-      },
-      select: {
-        id: true,
-      },
+    const result = await submitLunchSelection({
+      personId,
+      menuDayId,
+      menuOptionId,
+      todayKey,
     });
+
+    if (result.status !== "saved") {
+      return;
+    }
 
     revalidatePath("/");
     revalidatePath("/admin");
