@@ -10,11 +10,22 @@ const adminLinks = [
   { href: "/admin/menu-days", label: "Histórico" },
 ];
 
-export default function AdminNav() {
+type AdminNavProps = {
+  variant?: "side" | "bottom";
+};
+
+export default function AdminNav({ variant = "side" }: AdminNavProps) {
   const pathname = usePathname();
+  const isBottom = variant === "bottom";
 
   return (
-    <nav className="flex flex-wrap gap-3">
+    <nav
+      className={
+        isBottom
+          ? "grid grid-cols-4 gap-1 rounded-[24px] border border-border bg-[rgba(18,21,27,0.96)] p-1.5 shadow-[var(--shadow-card)] backdrop-blur lg:hidden"
+          : "flex flex-col gap-2"
+      }
+    >
       {adminLinks.map((link) => {
         const isActive = pathname === link.href;
 
@@ -22,10 +33,12 @@ export default function AdminNav() {
           <Link
             key={link.href}
             href={link.href}
-            className={`rounded-full border px-4 py-2 text-sm font-medium transition-colors ${
+            className={`border text-sm font-semibold transition-colors ${
+              isBottom ? "rounded-[18px] px-2 py-2 text-center text-xs" : "rounded-[18px] px-4 py-3"
+            } ${
               isActive
-                ? "border-[var(--accent-border)] bg-[var(--accent-soft)] text-[var(--accent)]"
-                : "border-border bg-background text-foreground hover:bg-surface"
+                ? "border-[var(--accent-border)] bg-[var(--accent-soft)] text-[var(--accent-strong)] shadow-[0_0_0_1px_var(--accent-border)]"
+                : "border-transparent bg-transparent text-muted hover:bg-[var(--surface-strong)] hover:text-foreground"
             }`}
           >
             {link.label}

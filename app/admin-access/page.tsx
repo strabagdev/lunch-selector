@@ -60,9 +60,9 @@ export default async function AdminAccessPage({
   }
 
   return (
-    <main className="mx-auto flex min-h-full w-full max-w-md flex-1 flex-col justify-center px-4 py-6 sm:px-6 sm:py-10">
-      <section className="rounded-[2rem] border border-border bg-surface p-6 sm:p-8">
-        <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-accent">
+    <main className="mx-auto grid h-dvh min-h-dvh w-full max-w-md flex-1 overflow-hidden px-4 pb-[calc(1rem+env(safe-area-inset-bottom))] pt-[calc(1rem+env(safe-area-inset-top))] sm:px-6 sm:py-10">
+      <section className="self-center overflow-y-auto rounded-[2rem] border border-border bg-surface p-6 sm:p-8">
+        <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--accent-strong)]">
           Acceso privado
         </p>
         <h1 className="mt-3 text-2xl font-semibold tracking-tight">
@@ -81,7 +81,7 @@ export default async function AdminAccessPage({
               type="password"
               name="password"
               required
-              className="w-full rounded-2xl border border-border bg-background px-4 py-3 text-base outline-none transition-colors focus:border-accent sm:text-sm"
+              className="w-full rounded-2xl border border-border bg-background px-4 py-3 text-base outline-none transition-colors focus:border-[var(--accent-border)] sm:text-sm"
             />
           </label>
 
@@ -99,7 +99,7 @@ export default async function AdminAccessPage({
 
             <button
               type="submit"
-              className="rounded-2xl bg-foreground px-5 py-3 text-sm font-medium text-background transition-transform hover:-translate-y-0.5"
+              className="rounded-2xl bg-[linear-gradient(135deg,var(--accent),var(--accent-strong))] px-5 py-3 text-sm font-medium text-white shadow-[0_16px_30px_-18px_rgba(6,127,143,0.76)] transition hover:-translate-y-0.5 hover:brightness-105"
             >
               Entrar
             </button>

@@ -252,10 +252,10 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
 
   return (
     <div className="space-y-6">
-      <section className="rounded-[26px] border border-border bg-[linear-gradient(180deg,rgba(255,255,255,0.96),rgba(245,249,248,0.92))] p-6 shadow-[var(--shadow-card)] sm:p-8">
+      <section className="rounded-[28px] border border-border bg-[var(--card)] p-6 shadow-[var(--shadow-card)] sm:p-8">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
           <div className="space-y-2">
-            <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-accent">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--accent-strong)]">
               Reporte diario
             </p>
             <h2 className="text-2xl font-semibold tracking-tight">
@@ -279,7 +279,7 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
             <button
               type="submit"
               disabled={isTodayClosed}
-              className="w-full rounded-[16px] bg-[linear-gradient(180deg,var(--accent),#0a5a54)] px-5 py-3 text-sm font-medium text-white shadow-[0_14px_26px_-16px_rgba(15,23,42,0.28)] transition hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto"
+              className="w-full rounded-[16px] bg-[linear-gradient(135deg,var(--accent),var(--accent-strong))] px-5 py-3 text-sm font-medium text-white shadow-[0_14px_26px_-16px_rgba(15,23,42,0.28)] transition hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto"
             >
               Cerrar y enviar resumen
             </button>
@@ -287,10 +287,10 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
         </div>
       </section>
 
-      <section className="rounded-[26px] border border-border bg-[linear-gradient(180deg,rgba(255,255,255,0.96),rgba(245,249,248,0.92))] p-6 shadow-[var(--shadow-card)] sm:p-8">
+      <section className="rounded-[28px] border border-border bg-[var(--card)] p-6 shadow-[var(--shadow-card)] sm:p-8">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
           <div className="space-y-2">
-            <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-accent">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--accent-strong)]">
               Recomendacion diaria
             </p>
             <h2 className="text-2xl font-semibold tracking-tight">
@@ -306,14 +306,14 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
             <form action={regenerateHomeNarrative} className="w-full sm:w-auto">
               <button
                 type="submit"
-                className="w-full rounded-[16px] border border-[var(--accent-border)] bg-[var(--accent-soft)] px-5 py-3 text-sm font-medium text-[var(--accent)] transition hover:brightness-95 sm:w-auto"
+                className="w-full rounded-[16px] border border-[var(--accent-border)] bg-[var(--accent-soft)] px-5 py-3 text-sm font-medium text-[var(--accent-strong)] transition hover:brightness-110 sm:w-auto"
               >
                 Regenerar recomendacion del d&iacute;a
               </button>
             </form>
 
             <div className="rounded-[18px] border border-border bg-[var(--card)] p-3 shadow-[var(--shadow-soft)]">
-              <div className="min-w-0 rounded-[14px] bg-[rgba(17,32,28,0.03)] px-3 py-2">
+              <div className="min-w-0 rounded-[14px] bg-[rgba(7,9,13,0.34)] px-3 py-2">
                 <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-muted">
                   Actual
                 </p>
@@ -328,7 +328,7 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
         </div>
 
         {reportStatus === "sent" ? (
-          <div className="mt-4 rounded-[18px] border border-[rgba(15,118,110,0.18)] bg-[rgba(15,118,110,0.06)] px-4 py-3 text-sm text-[var(--accent)]">
+          <div className="mt-4 rounded-[18px] border border-[var(--accent-border)] bg-[var(--accent-soft)] px-4 py-3 text-sm text-[var(--accent-strong)]">
             La toma de solicitudes fue cerrada y el resumen fue enviado correctamente.
           </div>
         ) : null}
@@ -370,7 +370,7 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
         ) : null}
 
         {narrativeStatus === "regenerated" ? (
-          <div className="mt-4 rounded-[18px] border border-[rgba(15,118,110,0.18)] bg-[rgba(15,118,110,0.06)] px-4 py-3 text-sm text-[var(--accent)]">
+          <div className="mt-4 rounded-[18px] border border-[var(--accent-border)] bg-[var(--accent-soft)] px-4 py-3 text-sm text-[var(--accent-strong)]">
             La recomendacion del d&iacute;a se limpiar&aacute; y se regenerar&aacute; en la pr&oacute;xima carga de la portada.
           </div>
         ) : null}
@@ -388,7 +388,7 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
         ) : null}
       </section>
 
-      <section className="rounded-[26px] border border-border bg-[linear-gradient(180deg,rgba(255,255,255,0.96),rgba(245,249,248,0.92))] p-6 shadow-[var(--shadow-card)] sm:p-8">
+      <section className="rounded-[28px] border border-border bg-[var(--card)] p-6 shadow-[var(--shadow-card)] sm:p-8">
         {menuDays.length === 0 ? (
           <div className="rounded-3xl border border-dashed border-border bg-background px-5 py-4 text-sm leading-6 text-muted">
             A&uacute;n no hay d&iacute;as de men&uacute; con opciones cargadas.
@@ -404,7 +404,7 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
                   href={`/admin?menuDay=${availableMenuDay.id}`}
                   className={`min-w-0 rounded-[16px] border px-3 py-2 text-sm transition-colors sm:min-w-[76px] ${
                     isSelected
-                      ? "border-[var(--accent-border)] bg-[var(--accent-soft)] text-[var(--accent)] shadow-[0_0_0_1px_var(--accent-border)]"
+                      ? "border-[var(--accent-border)] bg-[var(--accent-soft)] text-[var(--accent-strong)] shadow-[0_0_0_1px_var(--accent-border)]"
                       : "border-border bg-[var(--card)] text-foreground hover:bg-[var(--surface-strong)]"
                   }`}
                 >
@@ -426,10 +426,10 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
 
       {!menuDay ? null : (
         <div className="space-y-6">
-          <section className="rounded-[26px] border border-border bg-[linear-gradient(180deg,rgba(255,255,255,0.96),rgba(245,249,248,0.92))] p-6 shadow-[var(--shadow-card)] sm:p-8">
+          <section className="rounded-[28px] border border-border bg-[var(--card)] p-6 shadow-[var(--shadow-card)] sm:p-8">
             <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
               <div className="space-y-2">
-                <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-accent">
+                <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--accent-strong)]">
                   Resumen
                 </p>
                 <h3 className="text-2xl font-semibold tracking-tight">
@@ -448,7 +448,7 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
                   className="rounded-[20px] border border-border bg-[var(--card)] px-3 py-4 text-center shadow-[var(--shadow-soft)] sm:px-5 sm:py-6"
                 >
                   <div className="flex items-center justify-center">
-                    <span className="text-3xl font-semibold leading-none tracking-tight text-accent sm:text-6xl">
+                    <span className="text-3xl font-semibold leading-none tracking-tight text-[var(--accent-strong)] sm:text-6xl">
                       {selectionsByOption.get(option.id) ?? 0}
                     </span>
                   </div>
@@ -463,7 +463,7 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
             </div>
           </section>
 
-          <section className="rounded-[26px] border border-border bg-[linear-gradient(180deg,rgba(255,255,255,0.96),rgba(245,249,248,0.92))] p-6 shadow-[var(--shadow-card)] sm:p-8">
+          <section className="rounded-[28px] border border-border bg-[var(--card)] p-6 shadow-[var(--shadow-card)] sm:p-8">
             <h3 className="text-xl font-semibold tracking-tight">
               Personas que ya eligieron
             </h3>

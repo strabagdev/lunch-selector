@@ -288,7 +288,7 @@ export default async function AdminMenuConfigPage({
               type="date"
               name="date"
               required
-              className="w-full rounded-2xl border border-border bg-background px-4 py-3 text-base outline-none transition-colors focus:border-accent sm:text-sm"
+              className="w-full rounded-2xl border border-border bg-background px-4 py-3 text-base outline-none transition-colors focus:border-[var(--accent-border)] sm:text-sm"
             />
           </label>
 
@@ -302,7 +302,7 @@ export default async function AdminMenuConfigPage({
                     type="text"
                     name="optionName"
                     placeholder={`Menú ${item}`}
-                    className="w-full rounded-2xl border border-border bg-background px-4 py-3 text-base outline-none transition-colors focus:border-accent sm:text-sm"
+                    className="w-full rounded-2xl border border-border bg-background px-4 py-3 text-base outline-none transition-colors focus:border-[var(--accent-border)] sm:text-sm"
                   />
                 </label>
               </div>
@@ -311,7 +311,7 @@ export default async function AdminMenuConfigPage({
 
           <button
             type="submit"
-            className="rounded-2xl bg-foreground px-5 py-3 text-sm font-medium text-background transition-transform hover:-translate-y-0.5"
+            className="rounded-2xl bg-[linear-gradient(135deg,var(--accent),var(--accent-strong))] px-5 py-3 text-sm font-medium text-white shadow-[0_16px_30px_-18px_rgba(6,127,143,0.76)] transition hover:-translate-y-0.5 hover:brightness-105"
           >
             Guardar fecha
           </button>
@@ -394,12 +394,12 @@ export default async function AdminMenuConfigPage({
                                   name="name"
                                   required
                                   defaultValue={option.name}
-                                  className="w-full rounded-2xl border border-border bg-surface px-4 py-3 text-base outline-none transition-colors focus:border-accent sm:text-sm"
+                                  className="w-full rounded-2xl border border-border bg-surface px-4 py-3 text-base outline-none transition-colors focus:border-[var(--accent-border)] sm:text-sm"
                                 />
                               </label>
                               <button
                                 type="submit"
-                                className="rounded-2xl bg-foreground px-4 py-3 text-sm font-medium text-background transition-transform hover:-translate-y-0.5"
+                                className="rounded-2xl bg-[linear-gradient(135deg,var(--accent),var(--accent-strong))] px-4 py-3 text-sm font-medium text-white shadow-[0_16px_30px_-18px_rgba(6,127,143,0.76)] transition hover:-translate-y-0.5 hover:brightness-105"
                               >
                                 Guardar
                               </button>
@@ -474,12 +474,12 @@ export default async function AdminMenuConfigPage({
                           name="name"
                           required
                           placeholder="Ejemplo: Pollo con arroz"
-                          className="w-full rounded-2xl border border-border bg-surface px-4 py-3 text-base outline-none transition-colors focus:border-accent sm:text-sm"
+                          className="w-full rounded-2xl border border-border bg-surface px-4 py-3 text-base outline-none transition-colors focus:border-[var(--accent-border)] sm:text-sm"
                         />
                       </label>
                       <button
                         type="submit"
-                        className="rounded-2xl bg-foreground px-5 py-3 text-sm font-medium text-background transition-transform hover:-translate-y-0.5"
+                        className="rounded-2xl bg-[linear-gradient(135deg,var(--accent),var(--accent-strong))] px-5 py-3 text-sm font-medium text-white shadow-[0_16px_30px_-18px_rgba(6,127,143,0.76)] transition hover:-translate-y-0.5 hover:brightness-105"
                       >
                         Agregar opci&oacute;n
                       </button>

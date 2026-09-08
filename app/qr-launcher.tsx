@@ -37,7 +37,7 @@ export function QrLauncher({ shareUrl }: QrLauncherProps) {
       <button
         type="button"
         onClick={() => setIsOpen(true)}
-        className="flex-1 rounded-[16px] border border-[color:var(--border-strong)] bg-[var(--surface-strong)] px-4 py-2.5 text-sm font-semibold shadow-[var(--shadow-soft)] transition-colors hover:bg-white sm:flex-none"
+        className="flex-1 rounded-[16px] border border-[color:var(--border-strong)] bg-[var(--surface-strong)] px-4 py-2.5 text-sm font-semibold shadow-[var(--shadow-soft)] transition-colors hover:bg-[var(--card)] sm:flex-none"
       >
         QR
       </button>
@@ -56,20 +56,20 @@ export function QrLauncher({ shareUrl }: QrLauncherProps) {
               <button
                 type="button"
                 onClick={() => setIsOpen(false)}
-                className="rounded-full border border-border bg-white px-3 py-1.5 text-sm font-semibold transition-colors hover:bg-background"
+                className="rounded-full border border-border bg-[var(--surface-strong)] px-3 py-1.5 text-sm font-semibold transition-colors hover:bg-[var(--card)]"
               >
                 Cerrar
               </button>
             </div>
 
             <div className="mt-2 flex w-full flex-col items-center gap-4">
-              <h2 className="text-center text-xl font-semibold tracking-tight text-[var(--ink)]">
+              <h2 className="text-center text-xl font-semibold tracking-tight text-white">
                 Escanea este QR
               </h2>
               <p className="max-w-xl text-center text-sm leading-6 text-muted">
                 Comparte este acceso directo para abrir el registro de almuerzo.
               </p>
-              <div className="w-full max-w-[320px] rounded-[24px] bg-white p-3 shadow-[inset_0_0_0_1px_rgba(23,27,36,0.08)]">
+              <div className="w-full max-w-[320px] rounded-[24px] bg-white p-3 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.12)]">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src={qrImageUrl}

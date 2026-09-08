@@ -1,8 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState, useSyncExternalStore } from "react";
-import type { ReactNode } from "react";
+import { useState } from "react";
 import { QrLauncher } from "./qr-launcher";
 
 type PersonOption = {
@@ -33,14 +32,12 @@ type MenuDayItem = {
 type HomeFlowProps = {
   people: PersonOption[];
   shareUrl: string;
-  todayWizardLabel: string;
   todayDateKey: string;
   todayNarrative: {
     text: string;
     model: string | null;
   } | null;
   todayMonthKey: string;
-  cutoffNotice: string;
   isTodayClosed: boolean;
   menuDays: MenuDayItem[];
   coverageMenuDays?: MenuDayItem[];
@@ -65,6 +62,7 @@ const STEPS = [
 ] as const;
 
 const COVERED_DAYS_PREVIEW_LIMIT = 6;
+const MOCK_ENERGY_ESTIMATES_KCAL = [620, 740, 710, 485, 660, 590, 735, 515];
 const CALENDAR_WEEKDAYS = ["Lun", "Mar", "Mie", "Jue", "Vie", "Sab", "Dom"];
 const CALENDAR_MONTHS = [
   "enero",
@@ -83,16 +81,14 @@ const CALENDAR_MONTHS = [
 
 function formatWizardDateLabel(dateKey: string) {
   const date = new Date(`${dateKey}T00:00:00.000Z`);
-
-  return new Intl.DateTimeFormat("es-CL", {
+  const formattedDate = new Intl.DateTimeFormat("es-CL", {
     timeZone: "UTC",
-    weekday: "short",
+    weekday: "long",
     day: "numeric",
-    month: "short",
-    year: "numeric",
-  })
-    .format(date)
-    .replace(".", "");
+    month: "long",
+  }).format(date);
+
+  return formattedDate.charAt(0).toUpperCase() + formattedDate.slice(1);
 }
 
 function getMonthKey(dateKey: string) {
@@ -149,28 +145,17 @@ function buildMonthCalendarDays(monthKey: string, menuDays: MenuDayItem[]) {
   return monthDays;
 }
 
-function renderBoldMarkdown(text: string): ReactNode[] {
-  return text.split(/(\*\*.*?\*\*)/g).filter(Boolean).map((part, index) => {
-    if (part.startsWith("**") && part.endsWith("**")) {
-      return <strong key={`${part}-${index}`}>{part.slice(2, -2)}</strong>;
-    }
-
-    return <span key={`${part}-${index}`}>{part}</span>;
-  });
-}
-
-function subscribeToMount() {
-  return () => {};
+function getMockEnergyEstimateKcal(optionIndex: number) {
+  return MOCK_ENERGY_ESTIMATES_KCAL[
+    optionIndex % MOCK_ENERGY_ESTIMATES_KCAL.length
+  ];
 }
 
 export function HomeFlow({
   people,
   shareUrl,
-  todayWizardLabel,
   todayDateKey,
-  todayNarrative,
   todayMonthKey,
-  cutoffNotice,
   isTodayClosed,
   menuDays,
   coverageMenuDays = menuDays,
@@ -190,32 +175,6 @@ export function HomeFlow({
   const [selectedMenuOptionId, setSelectedMenuOptionId] = useState(
     initialSuccess ? initialOptionId ?? "" : "",
   );
-  const hasMounted = useSyncExternalStore(subscribeToMount, () => true, () => false);
-  const [isCutoffNoticeDismissed, setIsCutoffNoticeDismissed] = useState(false);
-  const [cutoffNoticeProgress, setCutoffNoticeProgress] = useState(100);
-  const [isNarrativeExpanded, setIsNarrativeExpanded] = useState(false);
-
-  useEffect(() => {
-    if (!hasMounted || currentStep !== 1 || isCutoffNoticeDismissed) {
-      return;
-    }
-
-    const startedAt = Date.now();
-    const intervalId = window.setInterval(() => {
-      const elapsed = Date.now() - startedAt;
-      const nextProgress = Math.max(0, 100 - elapsed / 300);
-      setCutoffNoticeProgress(nextProgress);
-    }, 100);
-
-    const timeoutId = window.setTimeout(() => {
-      setIsCutoffNoticeDismissed(true);
-    }, 30_000);
-
-    return () => {
-      window.clearInterval(intervalId);
-      window.clearTimeout(timeoutId);
-    };
-  }, [currentStep, hasMounted, isCutoffNoticeDismissed]);
 
   const selectedMenuDay =
     menuDays.find((menuDay) => menuDay.id === selectedMenuDayId) ?? null;
@@ -289,163 +248,26 @@ export function HomeFlow({
   const currentStepMeta = STEPS[currentProgressStep - 1];
   const wizardDateLabel = selectedMenuDay
     ? formatWizardDateLabel(selectedMenuDay.dateKey)
-    : `Hoy, ${todayWizardLabel}`;
+    : formatWizardDateLabel(todayDateKey);
   return (
-    <>
-      {hasMounted && currentStep === 1 && (isTodayClosed || todayNarrative) ? (
-        <section
-          className={
-            isTodayClosed
-              ? "overflow-hidden rounded-[24px] border border-[var(--danger-border)] bg-[linear-gradient(135deg,rgba(255,255,255,0.98),rgba(255,242,245,0.96))] p-4 text-[var(--danger)] shadow-[var(--shadow-soft)] sm:p-5"
-              : "overflow-hidden rounded-[28px] border border-white/20 bg-[radial-gradient(circle_at_16%_0%,rgba(6,127,143,0.75),transparent_38%),linear-gradient(135deg,var(--ink),#085a71_54%,#0b9aae)] p-5 text-white shadow-[0_24px_70px_-42px_rgba(17,24,39,0.65)] sm:p-6"
-          }
-        >
-          {isTodayClosed ? (
-            <div className="flex items-center justify-center gap-3 text-center">
-              <span
-                aria-hidden="true"
-                className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-[var(--danger-border)] bg-white shadow-[0_10px_22px_-16px_rgba(127,29,29,0.55)]"
-              >
-                <svg
-                  viewBox="0 0 20 20"
-                  className="h-4.5 w-4.5"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="1.8"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
-                  <circle cx="10" cy="10" r="7" />
-                  <path d="M10 6.5V10l2.2 1.7" />
-                </svg>
-              </span>
-              <div className="min-w-0 text-left">
-                <h2 className="text-base font-semibold leading-5 sm:text-lg">
-                  Solicitudes cerradas
-                </h2>
-                <p className="mt-1 text-xs font-medium leading-5 text-muted">
-                  Puedes programar fechas futuras.
-                </p>
-              </div>
-            </div>
-          ) : todayNarrative ? (
-            <div className="space-y-3">
-              <button
-                type="button"
-                onClick={() => setIsNarrativeExpanded((current) => !current)}
-                className="flex w-full items-center justify-between gap-3 text-left"
-                aria-expanded={isNarrativeExpanded}
-              >
-                <span className="flex min-w-0 items-center gap-3">
-                  <span className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-[18px] border border-white/15 bg-white/12 shadow-[inset_0_1px_0_rgba(255,255,255,0.18)]">
-                    <svg
-                      aria-hidden="true"
-                      viewBox="0 0 24 24"
-                      className="h-5.5 w-5.5"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="1.8"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    >
-                      <path d="M4 13.5V6.8A1.8 1.8 0 0 1 5.8 5h12.4A1.8 1.8 0 0 1 20 6.8v6.7A1.8 1.8 0 0 1 18.2 15.3H9l-4.2 3.2v-3.2H5.8A1.8 1.8 0 0 1 4 13.5Z" />
-                      <path d="M8 9.5h8" />
-                      <path d="M8 12.5h5" />
-                    </svg>
-                  </span>
-                  <span className="min-w-0">
-                    <span className="block text-[0.95rem] font-semibold leading-5 tracking-tight sm:text-[1.1rem]">
-                      Una razon para cada opcion
-                    </span>
-                    <span className="mt-0.5 block text-xs font-medium text-white/70">
-                      {isNarrativeExpanded ? "Ocultar recomendacion" : "Ver recomendacion"}
-                    </span>
-                  </span>
-                </span>
-                <span
-                  aria-hidden="true"
-                  className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white/10 text-white transition-transform"
-                >
-                  <svg
-                    viewBox="0 0 20 20"
-                    className={`h-4 w-4 transition-transform ${
-                      isNarrativeExpanded ? "rotate-180" : ""
-                    }`}
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="1.8"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  >
-                    <path d="m5 8 5 5 5-5" />
-                  </svg>
-                </span>
-              </button>
-
-              <p
-                className={`mx-auto max-w-3xl text-sm leading-6 text-white/88 sm:text-base ${
-                  isNarrativeExpanded ? "" : "line-clamp-2"
-                }`}
-              >
-                {renderBoldMarkdown(todayNarrative.text)}
-              </p>
-            </div>
-          ) : null}
-        </section>
-      ) : null}
-
-      {hasMounted && currentStep === 1 && !isTodayClosed && !isCutoffNoticeDismissed ? (
-        <section className="rounded-[22px] border border-[var(--danger-border)] bg-[var(--danger-soft)] px-4 py-3 text-sm font-medium text-[var(--danger)] shadow-[var(--shadow-soft)]">
-          <div className="flex items-center justify-center gap-3 text-center">
-            <div className="flex flex-1 items-center justify-center gap-3 text-center">
-              <span
-                aria-hidden="true"
-                className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-[var(--danger-border)] bg-white/85 text-[var(--danger)] shadow-[0_10px_22px_-16px_rgba(127,29,29,0.55)]"
-              >
-                <svg
-                  viewBox="0 0 20 20"
-                  className="h-4.5 w-4.5"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="1.8"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
-                  <circle cx="10" cy="10" r="7" />
-                  <path d="M10 6.5V10l2.2 1.7" />
-                </svg>
-              </span>
-              <p className="text-base font-semibold uppercase tracking-[0.14em] leading-5 sm:text-lg">
-                {cutoffNotice}
-              </p>
-            </div>
-          </div>
-          <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-[rgba(220,63,97,0.16)]">
-            <div
-              className="h-full rounded-full bg-[linear-gradient(90deg,rgba(220,63,97,0.92),rgba(246,114,128,0.86))] transition-[width] duration-100"
-              style={{ width: `${cutoffNoticeProgress}%` }}
-            />
-          </div>
-        </section>
-      ) : null}
-
-      <section className="rounded-[28px] border border-white/70 bg-[linear-gradient(180deg,rgba(255,255,255,0.98),rgba(248,250,255,0.92))] p-4 shadow-[var(--shadow-card)] backdrop-blur sm:p-5">
-        <div className="space-y-3 sm:space-y-4">
+    <div className="grid h-full min-h-0 grid-rows-[auto_minmax(0,1fr)] gap-[clamp(0.5rem,1.35vh,1rem)]">
+      <section className="rounded-[26px] border border-border bg-[rgba(18,21,27,0.9)] p-[clamp(0.75rem,1.7vh,1.15rem)] shadow-[var(--shadow-card)] backdrop-blur sm:rounded-[30px]">
+        <div className="space-y-[clamp(0.45rem,1.1vh,0.75rem)]">
           <div className="flex items-start justify-between gap-3">
-            <div className="min-w-0 space-y-1 sm:space-y-2.5">
-              <p className="text-[9px] font-semibold uppercase tracking-[0.16em] text-accent sm:text-[10px] sm:tracking-[0.18em]">
+            <div className="min-w-0 space-y-1">
+              <p className="text-[9px] font-semibold uppercase tracking-[0.16em] text-[var(--accent-strong)] sm:text-[10px] sm:tracking-[0.18em]">
                 Seleccion diaria
               </p>
-              <h1 className="text-[1.25rem] font-semibold leading-tight tracking-tight text-[var(--ink)] sm:text-[1.65rem]">
+              <h1 className="text-[1.15rem] font-semibold leading-tight tracking-tight text-white sm:text-[1.45rem]">
                 Registro de almuerzo
               </h1>
             </div>
-            <p className="shrink-0 whitespace-nowrap rounded-full bg-[var(--accent-soft)] px-3 py-1.5 text-right text-[11px] font-semibold leading-none text-[var(--accent-strong)] sm:text-xs">
+            <p className="shrink-0 text-right text-[clamp(1rem,2.2vw,1.65rem)] font-semibold leading-tight tracking-tight text-white">
               {wizardDateLabel}
             </p>
           </div>
 
-          <div className="space-y-2">
+          <div className="space-y-1.5">
             <div className="flex items-end justify-between gap-3">
               <div className="space-y-1">
                 <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted">
@@ -460,9 +282,9 @@ export function HomeFlow({
               </p>
             </div>
 
-            <div className="h-2 overflow-hidden rounded-full bg-[rgba(23,27,36,0.07)]">
+            <div className="h-1.5 overflow-hidden rounded-full bg-[rgba(255,255,255,0.08)]">
               <div
-                className="h-full rounded-full bg-[linear-gradient(90deg,var(--accent),var(--warm))] transition-[width] duration-300"
+                className="h-full rounded-full bg-[linear-gradient(90deg,var(--accent),var(--accent-strong))] transition-[width] duration-300"
                 style={{
                   width: `${Math.max(
                     0,
@@ -475,23 +297,25 @@ export function HomeFlow({
         </div>
       </section>
 
-      <form action={submitSelection}>
-        {selectedPersonId ? <input type="hidden" name="personId" value={selectedPersonId} /> : null}
-        {selectedMenuDay ? <input type="hidden" name="menuDayId" value={selectedMenuDay.id} /> : null}
-        {selectedMenuOptionId ? (
-          <input type="hidden" name="menuOptionId" value={selectedMenuOptionId} />
-        ) : null}
+      <div className="min-h-0 overflow-y-auto overscroll-contain pr-0.5">
+        <div className="min-h-full pb-1">
+          <form action={submitSelection}>
+            {selectedPersonId ? <input type="hidden" name="personId" value={selectedPersonId} /> : null}
+            {selectedMenuDay ? <input type="hidden" name="menuDayId" value={selectedMenuDay.id} /> : null}
+            {selectedMenuOptionId ? (
+              <input type="hidden" name="menuOptionId" value={selectedMenuOptionId} />
+            ) : null}
 
         {currentStep === 5 ? (
-          <section className="rounded-[28px] border border-white/75 bg-[rgba(255,255,255,0.94)] p-4 shadow-[var(--shadow-card)] backdrop-blur sm:p-5">
-            <h2 className="text-xl font-semibold tracking-tight text-[var(--ink)]">
+          <section className="rounded-[26px] border border-border bg-[var(--card)] p-3.5 shadow-[var(--shadow-card)] backdrop-blur sm:p-4">
+            <h2 className="text-xl font-semibold tracking-tight text-white">
               Almuerzo confirmado.
             </h2>
-            <p className="mt-4 text-sm leading-6 text-muted">
+            <p className="mt-3 text-sm leading-5 text-muted">
               Tu eleccion fue registrada correctamente.
             </p>
 
-            <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+            <div className="mt-5 flex flex-col gap-2.5 sm:flex-row">
               {nextAvailableMenuDayId ? (
                 <button
                   type="button"
@@ -500,7 +324,7 @@ export function HomeFlow({
                     setSelectedMenuOptionId("");
                     setCurrentStep(2);
                   }}
-                  className="rounded-[20px] bg-[linear-gradient(135deg,var(--accent),var(--accent-strong))] px-5 py-3.5 text-sm font-semibold text-white shadow-[0_16px_30px_-18px_rgba(8,90,113,0.75)] transition hover:brightness-105"
+                  className="rounded-[18px] bg-[linear-gradient(135deg,var(--accent),var(--accent-strong))] px-5 py-3 text-sm font-semibold text-white shadow-[0_16px_30px_-18px_rgba(8,90,113,0.75)] transition hover:brightness-105"
                 >
                   Seleccionar otra fecha
                 </button>
@@ -519,7 +343,7 @@ export function HomeFlow({
                   setSelectedMenuOptionId("");
                   setCurrentStep(1);
                 }}
-                className="rounded-[20px] border border-[color:var(--border-strong)] bg-[var(--surface-strong)] px-5 py-3.5 text-sm font-semibold transition-colors hover:bg-white"
+                className="rounded-[18px] border border-[color:var(--border-strong)] bg-[var(--surface-strong)] px-5 py-3 text-sm font-semibold transition-colors hover:bg-[var(--card)]"
               >
                 Cambiar persona
               </button>
@@ -528,18 +352,18 @@ export function HomeFlow({
         ) : null}
 
         {currentStep === 1 ? (
-          <section className="rounded-[28px] border border-white/75 bg-[rgba(255,255,255,0.94)] p-4 shadow-[var(--shadow-card)] backdrop-blur sm:p-5">
-            <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-accent">
+          <section className="rounded-[26px] border border-border bg-[var(--card)] p-3.5 shadow-[var(--shadow-card)] backdrop-blur sm:p-4">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--accent-strong)]">
               Paso 1
             </p>
-            <h2 className="mt-1.5 text-xl font-semibold tracking-tight text-[var(--ink)]">
+            <h2 className="mt-1 text-xl font-semibold tracking-tight text-white">
               Identificaci&oacute;n
             </h2>
-            <p className="mt-2 text-sm leading-6 text-muted">
+            <p className="mt-1.5 text-sm leading-5 text-muted">
               Selecciona tu nombre para comenzar.
             </p>
 
-            <div className="mt-5 max-w-md">
+            <div className="mt-4 max-w-md">
               <label className="block space-y-2">
                 <span className="sr-only">Persona</span>
                 <select
@@ -568,7 +392,7 @@ export function HomeFlow({
                       setCurrentCalendarMonthKey(getMonthKey(nextMenuDay.dateKey));
                     }
                   }}
-                  className="w-full rounded-[20px] border border-[color:var(--input)] bg-[var(--surface-strong)] px-4 py-3.5 text-base font-medium shadow-[inset_0_1px_0_rgba(255,255,255,0.75)] outline-none transition-colors focus:border-accent focus:shadow-[0_0_0_4px_rgba(6,127,143,0.12)] sm:text-sm"
+                  className="w-full rounded-[18px] border border-[color:var(--input)] bg-[var(--surface-strong)] px-4 py-3 text-base font-medium text-foreground outline-none transition-colors focus:border-[var(--accent-border)] focus:shadow-[0_0_0_4px_rgba(6,127,143,0.22)] sm:text-sm"
                 >
                   <option value="" disabled>
                     Selecciona tu nombre
@@ -583,17 +407,17 @@ export function HomeFlow({
             </div>
 
             {selectedPerson ? (
-              <div className="mt-4 max-w-md">
+              <div className="mt-3 max-w-md">
                 {selectedPersonCoveredDays.length > 0 ? (
-                  <div className="space-y-3 text-sm">
-                    <div className="flex items-start gap-3">
+                  <div className="space-y-2.5 text-sm">
+                    <div className="flex items-start gap-2.5">
                       <span
                         aria-hidden="true"
-                        className="mt-0.5 inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[var(--accent-soft)] text-accent"
+                        className="mt-0.5 inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[var(--accent-soft)] text-[var(--accent-strong)]"
                       >
                         <svg
                           viewBox="0 0 20 20"
-                          className="h-4 w-4"
+                          className="h-3.5 w-3.5"
                           fill="none"
                           stroke="currentColor"
                           strokeWidth="1.8"
@@ -606,20 +430,12 @@ export function HomeFlow({
                         </svg>
                       </span>
                       <span className="min-w-0 text-left">
-                        <span className="block text-[10px] font-semibold uppercase tracking-[0.14em] text-muted">
-                          Hoy
-                        </span>
                         {todayCoveredDay ? (
-                          <>
-                            <span className="mt-1 block font-semibold leading-5 text-foreground">
-                              {todayCoveredDay.menuOptionName}
-                            </span>
-                            <span className="mt-0.5 block text-xs leading-5 text-muted">
-                              {todayCoveredDay.fullDateLabel}
-                            </span>
-                          </>
+                          <span className="block font-semibold leading-5 text-foreground">
+                            {todayCoveredDay.menuOptionName}
+                          </span>
                         ) : (
-                          <span className="mt-1 block font-medium leading-5 text-muted">
+                          <span className="block font-medium leading-5 text-muted">
                             No tienes almuerzo registrado para hoy.
                           </span>
                         )}
@@ -638,7 +454,7 @@ export function HomeFlow({
                           </span>
                           <span
                             aria-hidden="true"
-                            className="text-lg leading-none text-accent transition-transform group-open:rotate-180"
+                            className="text-lg leading-none text-[var(--accent-strong)] transition-transform group-open:rotate-180"
                           >
                             ˅
                           </span>
@@ -674,22 +490,22 @@ export function HomeFlow({
               </div>
             ) : null}
 
-            <div className="mt-7 flex flex-col gap-3 sm:flex-row sm:justify-end">
+            <div className="mt-5 flex flex-col gap-2.5 sm:flex-row sm:justify-end">
               <button
                 type="button"
                 disabled={!canAdvanceFromStep1}
                 onClick={() => setCurrentStep(2)}
-                className="w-full rounded-[20px] bg-[linear-gradient(135deg,var(--accent),var(--accent-strong))] px-5 py-3.5 text-sm font-semibold text-white shadow-[0_16px_30px_-18px_rgba(8,90,113,0.75)] transition hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto"
+                className="w-full rounded-[18px] bg-[linear-gradient(135deg,var(--accent),var(--accent-strong))] px-5 py-3 text-sm font-semibold text-white shadow-[0_16px_30px_-18px_rgba(8,90,113,0.75)] transition hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto"
               >
                 {isTodayClosed ? "Programar otras fechas" : "Continuar"}
               </button>
             </div>
 
-            <div className="mt-5 border-t border-border pt-3">
+            <div className="mt-4 border-t border-border pt-2.5">
               <div className="flex gap-2 sm:justify-end">
                 <Link
                   href="/admin"
-                  className="flex-1 rounded-[16px] border border-[color:var(--border-strong)] bg-[var(--surface-strong)] px-4 py-2.5 text-center text-sm font-semibold shadow-[var(--shadow-soft)] transition-colors hover:bg-white sm:flex-none"
+                  className="flex-1 rounded-[16px] border border-[color:var(--border-strong)] bg-[var(--surface-strong)] px-4 py-2.5 text-center text-sm font-semibold shadow-[var(--shadow-soft)] transition-colors hover:bg-[var(--card)] sm:flex-none"
                 >
                   AD
                 </Link>
@@ -700,30 +516,30 @@ export function HomeFlow({
         ) : null}
 
         {currentStep === 2 ? (
-          <section className="rounded-[28px] border border-white/75 bg-[rgba(255,255,255,0.94)] p-4 shadow-[var(--shadow-card)] backdrop-blur sm:p-5">
-            <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-accent">
+          <section className="rounded-[26px] border border-border bg-[var(--card)] p-3.5 shadow-[var(--shadow-card)] backdrop-blur sm:p-4">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--accent-strong)]">
               Paso 2
             </p>
-            <h2 className="mt-1.5 text-xl font-semibold tracking-tight text-[var(--ink)]">Elegir fecha</h2>
-            <p className="mt-2 text-sm leading-6 text-muted">
+            <h2 className="mt-1 text-xl font-semibold tracking-tight text-white">Elegir fecha</h2>
+            <p className="mt-1.5 text-sm leading-5 text-muted">
               {selectedPerson
                 ? `Estas eligiendo como ${selectedPerson.name}.`
                 : "Selecciona una fecha disponible para continuar."}
             </p>
 
             {hasNoAvailableDates ? (
-              <div className="mt-6 space-y-3">
-                <p className="text-sm leading-6 text-muted">
+              <div className="mt-4 space-y-2.5">
+                <p className="text-sm leading-5 text-muted">
                   Esta persona ya registr&oacute; elecci&oacute;n en todas las fechas
                   futuras disponibles.
                 </p>
                 {selectedPersonCoveredDays.length > 0 ? (
-                  <div className="rounded-[20px] border border-[var(--accent-border)] bg-[var(--accent-soft)] px-4 py-3 shadow-[var(--shadow-soft)]">
+                  <div className="rounded-[18px] border border-[var(--accent-border)] bg-[var(--accent-soft)] px-3.5 py-2.5 shadow-[var(--shadow-soft)]">
                     <div className="space-y-2">
                       {selectedPersonCoveredDays.map((coveredDay) => (
                         <div
                           key={coveredDay.menuDayId}
-                          className="rounded-[14px] bg-[var(--surface-strong)] px-3 py-2"
+                          className="rounded-[14px] bg-[var(--surface-strong)] px-3 py-1.5"
                         >
                           <div className="text-[11px] font-medium uppercase tracking-[0.08em] text-muted">
                             {coveredDay.shortDateLabel}
@@ -738,16 +554,13 @@ export function HomeFlow({
                 ) : null}
               </div>
             ) : (
-              <div className="mt-6 space-y-4">
+              <div className="mt-4 space-y-3">
                 {!selectedMenuDay && nextAvailableMenuDay ? (
-                  <div className="rounded-[20px] border border-border bg-[var(--surface-strong)] px-4 py-3 shadow-[var(--shadow-soft)]">
-                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                  <div className="rounded-[18px] border border-border bg-[var(--surface-strong)] px-3.5 py-2.5 shadow-[var(--shadow-soft)]">
+                    <div className="flex flex-col gap-2.5 sm:flex-row sm:items-center sm:justify-between">
                       <div>
                         <p className="text-xs font-semibold uppercase tracking-[0.12em] text-[var(--accent-strong)]">
                           Siguiente fecha pendiente
-                        </p>
-                        <p className="mt-1 text-sm font-medium text-foreground">
-                          {nextAvailableMenuDay.fullDateLabel}
                         </p>
                       </div>
                       <button
@@ -757,7 +570,7 @@ export function HomeFlow({
                           setSelectedMenuOptionId("");
                           setCurrentCalendarMonthKey(getMonthKey(nextAvailableMenuDay.dateKey));
                         }}
-                        className="rounded-[16px] bg-[var(--ink)] px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:brightness-110"
+                        className="rounded-[16px] bg-white px-4 py-2.5 text-sm font-semibold text-background transition-colors hover:brightness-95"
                       >
                         Usar esta fecha
                       </button>
@@ -765,8 +578,8 @@ export function HomeFlow({
                   </div>
                 ) : null}
 
-                <div className="rounded-[24px] border border-border bg-[rgba(255,255,255,0.76)] px-3 py-3 shadow-[var(--shadow-soft)]">
-                  <div className="mb-4 flex items-center justify-between gap-3">
+                <div className="rounded-[22px] border border-border bg-[var(--surface)] px-2.5 py-2.5 shadow-[var(--shadow-soft)]">
+                  <div className="mb-2.5 flex items-center justify-between gap-2.5">
                     <button
                       type="button"
                       disabled={currentCalendarMonthIndex <= 0}
@@ -777,7 +590,7 @@ export function HomeFlow({
                           setCurrentCalendarMonthKey(previousMonthKey);
                         }
                       }}
-                      className="rounded-[14px] border border-border bg-white px-3 py-2 text-xs font-semibold transition-colors hover:bg-[var(--surface-strong)] disabled:cursor-not-allowed disabled:opacity-50"
+                      className="rounded-[14px] border border-border bg-[var(--surface-strong)] px-3 py-1.5 text-xs font-semibold transition-colors hover:bg-[var(--card)] disabled:cursor-not-allowed disabled:opacity-50"
                     >
                       Anterior
                     </button>
@@ -797,13 +610,13 @@ export function HomeFlow({
                           setCurrentCalendarMonthKey(nextMonthKey);
                         }
                       }}
-                      className="rounded-[14px] border border-border bg-white px-3 py-2 text-xs font-semibold transition-colors hover:bg-[var(--surface-strong)] disabled:cursor-not-allowed disabled:opacity-50"
+                      className="rounded-[14px] border border-border bg-[var(--surface-strong)] px-3 py-1.5 text-xs font-semibold transition-colors hover:bg-[var(--card)] disabled:cursor-not-allowed disabled:opacity-50"
                     >
                       Siguiente
                     </button>
                   </div>
 
-                  <div className="mb-2 grid grid-cols-7 gap-px text-center text-[7px] font-semibold uppercase tracking-[0.05em] text-muted sm:text-[8px]">
+                  <div className="mb-1.5 grid grid-cols-7 gap-px text-center text-[7px] font-semibold uppercase tracking-[0.05em] text-muted sm:text-[8px]">
                     {CALENDAR_WEEKDAYS.map((weekday) => (
                       <div key={weekday}>{weekday}</div>
                     ))}
@@ -812,14 +625,14 @@ export function HomeFlow({
                   <div className="grid grid-cols-7 gap-px">
                     {currentCalendarDays.map((day) => {
                       if (day.kind === "empty") {
-                        return <div key={day.key} className="h-8 sm:h-6" />;
+                        return <div key={day.key} className="h-8 sm:h-7" />;
                       }
 
                       if (!day.menuDayId) {
                         return (
                           <div
                             key={day.key}
-                            className="flex h-10 w-full items-center justify-center rounded-[8px] border border-transparent bg-transparent text-[11px] font-medium leading-none text-muted sm:h-6 sm:text-[9px]"
+                            className="flex h-8 w-full items-center justify-center rounded-[8px] border border-transparent bg-transparent text-[11px] font-medium leading-none text-muted sm:h-7 sm:text-[10px]"
                           >
                             {day.dayNumber}
                           </div>
@@ -837,7 +650,7 @@ export function HomeFlow({
                         return (
                           <div
                             key={day.key}
-                            className="flex h-10 w-full items-center justify-center rounded-[8px] border border-dashed border-border bg-[var(--surface-strong)] text-[11px] font-semibold leading-none text-muted sm:h-6 sm:text-[9px]"
+                            className="flex h-8 w-full items-center justify-center rounded-[8px] border border-dashed border-border bg-[var(--surface-strong)] text-[11px] font-semibold leading-none text-muted sm:h-7 sm:text-[10px]"
                             title="Ya registraste una eleccion para esta fecha"
                           >
                             {day.dayNumber}
@@ -860,10 +673,10 @@ export function HomeFlow({
                               setCurrentCalendarMonthKey(getMonthKey(clickedMenuDay.dateKey));
                             }
                           }}
-                          className={`flex h-10 w-full items-center justify-center rounded-[10px] border text-[11px] font-semibold leading-none transition hover:-translate-y-0.5 hover:bg-[var(--surface-strong)] sm:h-6 sm:text-[9px] ${
+                          className={`flex h-8 w-full items-center justify-center rounded-[10px] border text-[11px] font-semibold leading-none transition hover:-translate-y-0.5 hover:bg-[var(--surface-strong)] sm:h-7 sm:text-[10px] ${
                             isSelected
-                              ? "border-[rgba(244,163,64,0.34)] bg-[rgba(244,163,64,0.18)] text-[var(--ink)] shadow-[0_0_0_1px_rgba(244,163,64,0.18)]"
-                              : "border-border bg-white text-foreground shadow-[var(--shadow-soft)]"
+                              ? "border-[var(--accent-border)] bg-[var(--accent-soft)] text-white shadow-[0_0_0_1px_var(--accent-border)]"
+                              : "border-border bg-[var(--surface-strong)] text-foreground shadow-[var(--shadow-soft)]"
                           }`}
                         >
                           {day.dayNumber}
@@ -872,9 +685,9 @@ export function HomeFlow({
                     })}
                   </div>
 
-                  <div className="mt-4 flex flex-wrap gap-3 text-[11px] text-muted">
+                  <div className="mt-2.5 flex flex-wrap gap-3 text-[11px] text-muted">
                     <span className="inline-flex items-center gap-2">
-                      <span className="h-2.5 w-2.5 rounded-[4px] border border-border bg-white" />
+                      <span className="h-2.5 w-2.5 rounded-[4px] border border-border bg-[var(--surface-strong)]" />
                       Disponible
                     </span>
                     <span className="inline-flex items-center gap-2">
@@ -890,11 +703,11 @@ export function HomeFlow({
               </div>
             )}
 
-            <div className="mt-8 flex flex-col-reverse gap-3 sm:flex-row sm:justify-between">
+            <div className="mt-5 flex flex-col-reverse gap-2.5 sm:flex-row sm:justify-between">
               <button
                 type="button"
                 onClick={() => setCurrentStep(1)}
-                className="w-full rounded-[20px] border border-[color:var(--border-strong)] bg-[var(--surface-strong)] px-5 py-3.5 text-sm font-semibold transition-colors hover:bg-white sm:w-auto"
+                className="w-full rounded-[18px] border border-[color:var(--border-strong)] bg-[var(--surface-strong)] px-5 py-3 text-sm font-semibold transition-colors hover:bg-[var(--card)] sm:w-auto"
               >
                 Volver
               </button>
@@ -902,7 +715,7 @@ export function HomeFlow({
                 type="button"
                 disabled={!canAdvanceFromStep2}
                 onClick={() => setCurrentStep(3)}
-                className="w-full rounded-[20px] bg-[linear-gradient(135deg,var(--accent),var(--accent-strong))] px-5 py-3.5 text-sm font-semibold text-white shadow-[0_16px_30px_-18px_rgba(8,90,113,0.75)] transition hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto"
+                className="w-full rounded-[18px] bg-[linear-gradient(135deg,var(--accent),var(--accent-strong))] px-5 py-3 text-sm font-semibold text-white shadow-[0_16px_30px_-18px_rgba(8,90,113,0.75)] transition hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto"
               >
                 Continuar
               </button>
@@ -911,23 +724,17 @@ export function HomeFlow({
         ) : null}
 
         {currentStep === 3 ? (
-          <section className="rounded-[28px] border border-white/75 bg-[rgba(255,255,255,0.94)] p-4 shadow-[var(--shadow-card)] backdrop-blur sm:p-5">
-            <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-accent">
+          <section className="rounded-[26px] border border-border bg-[var(--card)] p-3.5 shadow-[var(--shadow-card)] backdrop-blur sm:p-4">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--accent-strong)]">
               Paso 3
             </p>
-            <h2 className="mt-1.5 text-xl font-semibold tracking-tight text-[var(--ink)]">
+            <h2 className="mt-1 text-xl font-semibold tracking-tight text-white">
               Elegir almuerzo
             </h2>
 
             {selectedMenuDay ? (
-              <div className="mt-5 rounded-[24px] border border-border bg-[rgba(255,255,255,0.76)] px-3 py-3 shadow-[var(--shadow-soft)]">
-                <div className="mb-3 border-b border-border pb-2">
-                  <div className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted">
-                    {selectedMenuDay.fullDateLabel}
-                  </div>
-                </div>
-
-                <div className="grid gap-2.5 sm:grid-cols-2">
+              <div className="mt-4 rounded-[22px] border border-border bg-[var(--surface)] px-2.5 py-2.5 shadow-[var(--shadow-soft)]">
+                <div className="grid gap-2 sm:grid-cols-2">
                   {selectedMenuDay.options.map((option, index) => (
                     <label key={option.id} className="block cursor-pointer">
                       <input
@@ -937,27 +744,35 @@ export function HomeFlow({
                         onChange={() => setSelectedMenuOptionId(option.id)}
                         className="peer sr-only"
                       />
-                      <span className="block rounded-[20px] border border-border bg-white px-4 py-3.5 shadow-[var(--shadow-soft)] transition duration-150 hover:-translate-y-0.5 hover:bg-[var(--surface-strong)] hover:shadow-[0_16px_28px_-24px_rgba(15,23,42,0.24)] peer-checked:border-[rgba(244,163,64,0.45)] peer-checked:bg-[rgba(244,163,64,0.16)] peer-checked:shadow-[0_0_0_1px_rgba(244,163,64,0.28)]">
+                      <span className="relative block rounded-[20px] border border-border bg-[var(--surface-strong)] px-3.5 py-3 shadow-[var(--shadow-soft)] transition duration-150 hover:-translate-y-0.5 hover:border-[var(--border-strong)] hover:bg-[rgba(54,60,70,0.98)] hover:shadow-[0_18px_32px_-24px_rgba(0,0,0,0.8)] peer-checked:border-[var(--accent-border)] peer-checked:bg-[var(--accent-soft)] peer-checked:shadow-[0_0_0_1px_var(--accent-border)]">
+                        <span className="absolute right-3 top-3 inline-flex h-6 w-6 items-center justify-center rounded-full border border-border bg-[rgba(7,9,13,0.62)] text-[11px] font-semibold leading-none text-muted">
+                          {index + 1}
+                        </span>
                         <span className="block min-w-0">
-                          <span className="block text-[11px] font-semibold uppercase tracking-[0.16em] text-muted">
-                            Menu {index + 1}
-                          </span>
-                          <span className="mt-2 block text-sm font-semibold leading-5">
+                          <span className="block pr-8 text-base font-semibold leading-6 sm:text-[1.05rem] sm:leading-6">
                             {option.name}
+                          </span>
+                          <span className="mt-2.5 block rounded-[14px] border border-border bg-[rgba(7,9,13,0.42)] px-3 py-1.5 text-left">
+                            <span className="block text-base font-semibold leading-none text-[var(--accent-strong)]">
+                              &asymp; {getMockEnergyEstimateKcal(index)} kcal
+                            </span>
                           </span>
                         </span>
                       </span>
                     </label>
                   ))}
                 </div>
+                <p className="mt-2.5 px-1 text-xs leading-5 text-muted">
+                  Aporte energ&eacute;tico estimado seg&uacute;n los componentes del plato.
+                </p>
               </div>
             ) : null}
 
-            <div className="mt-8 flex flex-col-reverse gap-3 sm:flex-row sm:justify-between">
+            <div className="mt-5 flex flex-col-reverse gap-2.5 sm:flex-row sm:justify-between">
               <button
                 type="button"
                 onClick={() => setCurrentStep(2)}
-                className="w-full rounded-[20px] border border-[color:var(--border-strong)] bg-[var(--surface-strong)] px-5 py-3.5 text-sm font-semibold transition-colors hover:bg-white sm:w-auto"
+                className="w-full rounded-[18px] border border-[color:var(--border-strong)] bg-[var(--surface-strong)] px-5 py-3 text-sm font-semibold transition-colors hover:bg-[var(--card)] sm:w-auto"
               >
                 Volver
               </button>
@@ -965,7 +780,7 @@ export function HomeFlow({
                 type="button"
                 disabled={!canAdvanceFromStep3}
                 onClick={() => setCurrentStep(4)}
-                className="w-full rounded-[20px] bg-[linear-gradient(135deg,var(--accent),var(--accent-strong))] px-5 py-3.5 text-sm font-semibold text-white shadow-[0_16px_30px_-18px_rgba(8,90,113,0.75)] transition hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto"
+                className="w-full rounded-[18px] bg-[linear-gradient(135deg,var(--accent),var(--accent-strong))] px-5 py-3 text-sm font-semibold text-white shadow-[0_16px_30px_-18px_rgba(8,90,113,0.75)] transition hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto"
               >
                 Continuar
               </button>
@@ -974,25 +789,19 @@ export function HomeFlow({
         ) : null}
 
         {currentStep === 4 ? (
-          <section className="rounded-[28px] border border-white/75 bg-[rgba(255,255,255,0.94)] p-4 shadow-[var(--shadow-card)] backdrop-blur sm:p-5">
-            <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-accent">
+          <section className="rounded-[26px] border border-border bg-[var(--card)] p-3.5 shadow-[var(--shadow-card)] backdrop-blur sm:p-4">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--accent-strong)]">
               Paso 4
             </p>
-            <h2 className="mt-1.5 text-xl font-semibold tracking-tight text-[var(--ink)]">
+            <h2 className="mt-1 text-xl font-semibold tracking-tight text-white">
               Confirmar selecci&oacute;n
             </h2>
 
-            <div className="mt-5 rounded-[24px] border border-border bg-[rgba(255,255,255,0.76)] px-4 py-4 shadow-[var(--shadow-soft)]">
-              <div className="space-y-3 text-sm">
+            <div className="mt-4 rounded-[22px] border border-border bg-[var(--surface)] px-3.5 py-3.5 shadow-[var(--shadow-soft)]">
+              <div className="space-y-2.5 text-sm">
                 <div>
                   <span className="font-semibold">Persona:</span>{" "}
                   <span className="text-muted">{selectedPerson?.name ?? "-"}</span>
-                </div>
-                <div>
-                  <span className="font-semibold">Fecha:</span>{" "}
-                  <span className="text-muted">
-                    {selectedMenuDay?.fullDateLabel ?? "-"}
-                  </span>
                 </div>
                 <div>
                   <span className="font-semibold">Almuerzo:</span>{" "}
@@ -1001,25 +810,27 @@ export function HomeFlow({
               </div>
             </div>
 
-            <div className="mt-8 flex flex-col-reverse gap-3 sm:flex-row sm:justify-between">
+            <div className="mt-5 flex flex-col-reverse gap-2.5 sm:flex-row sm:justify-between">
               <button
                 type="button"
                 onClick={() => setCurrentStep(3)}
-                className="w-full rounded-[20px] border border-[color:var(--border-strong)] bg-[var(--surface-strong)] px-5 py-3.5 text-sm font-semibold transition-colors hover:bg-white sm:w-auto"
+                className="w-full rounded-[18px] border border-[color:var(--border-strong)] bg-[var(--surface-strong)] px-5 py-3 text-sm font-semibold transition-colors hover:bg-[var(--card)] sm:w-auto"
               >
                 Volver
               </button>
               <button
                 type="submit"
                 disabled={!canSubmit}
-                className="w-full rounded-[20px] bg-[linear-gradient(135deg,var(--accent),var(--accent-strong))] px-5 py-3.5 text-sm font-semibold text-white shadow-[0_16px_30px_-18px_rgba(8,90,113,0.75)] transition hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto"
+                className="w-full rounded-[18px] bg-[linear-gradient(135deg,var(--accent),var(--accent-strong))] px-5 py-3 text-sm font-semibold text-white shadow-[0_16px_30px_-18px_rgba(8,90,113,0.75)] transition hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto"
               >
                 Confirmar seleccion
               </button>
             </div>
           </section>
         ) : null}
-      </form>
-    </>
+          </form>
+        </div>
+      </div>
+    </div>
   );
 }

@@ -42,7 +42,7 @@ export function PersonRow({
         <div className={isEditing ? "space-y-2" : "min-w-0"}>
           {isEditing ? (
             <div className="flex flex-wrap items-center gap-2">
-              <span className="inline-flex rounded-full bg-white/75 px-2.5 py-1 text-[11px] font-semibold text-[var(--accent)]">
+              <span className="inline-flex rounded-full border border-[var(--accent-border)] bg-[var(--accent-soft)] px-2.5 py-1 text-[11px] font-semibold text-[var(--accent-strong)]">
                 Editando
               </span>
             </div>
@@ -63,7 +63,7 @@ export function PersonRow({
                   }
                 }}
                 onFocus={() => setIsEditing(true)}
-                className="h-10 w-full rounded-[14px] border border-[var(--accent-border)] bg-white px-3 text-base font-medium shadow-[inset_0_1px_0_rgba(255,255,255,0.75)] outline-none transition-colors sm:text-sm"
+                className="h-10 w-full rounded-[14px] border border-[var(--accent-border)] bg-[var(--surface-strong)] px-3 text-base font-medium outline-none transition-colors sm:text-sm"
               />
             ) : (
               <div className="flex min-h-9 min-w-0 items-center">
@@ -100,7 +100,7 @@ export function PersonRow({
               <button
                 type="submit"
                 formAction={deleteAction}
-                className="order-3 rounded-[14px] border border-[var(--danger-border)] bg-[linear-gradient(180deg,rgba(255,255,255,1),rgba(255,239,243,0.98))] px-4 py-2.5 text-sm font-medium text-[var(--danger)] shadow-[0_12px_24px_-20px_rgba(220,63,97,0.4)] transition hover:-translate-y-0.5 hover:bg-[linear-gradient(180deg,rgba(255,248,250,1),rgba(255,235,240,1))]"
+                className="order-3 rounded-[14px] border border-[var(--danger-border)] bg-[var(--danger-soft)] px-4 py-2.5 text-sm font-medium text-[var(--danger)] shadow-[0_12px_24px_-20px_rgba(220,63,97,0.4)] transition hover:-translate-y-0.5 hover:bg-[rgba(224,68,98,0.18)]"
               >
                 Eliminar
               </button>

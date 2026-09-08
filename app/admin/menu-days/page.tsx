@@ -237,7 +237,7 @@ export default async function AdminMenuDaysPage({
                       {currentPage > 1 ? (
                         <Link
                           href={getHistoryHref(selectedMonthKey, currentPage - 1)}
-                          className="rounded-xl border border-border bg-white px-3 py-2 text-xs font-semibold transition-colors hover:bg-surface"
+                          className="rounded-xl border border-border bg-[var(--surface-strong)] px-3 py-2 text-xs font-semibold transition-colors hover:bg-[var(--card)]"
                         >
                           Anterior
                         </Link>
@@ -250,8 +250,8 @@ export default async function AdminMenuDaysPage({
                           aria-current={page === currentPage ? "page" : undefined}
                           className={`flex h-8 min-w-8 items-center justify-center rounded-xl border px-2 text-xs font-semibold transition-colors ${
                             page === currentPage
-                              ? "border-[var(--accent-border)] bg-[var(--accent-soft)] text-[var(--accent)]"
-                              : "border-border bg-white text-foreground hover:bg-surface"
+                              ? "border-[var(--accent-border)] bg-[var(--accent-soft)] text-[var(--accent-strong)]"
+                              : "border-border bg-[var(--surface-strong)] text-foreground hover:bg-[var(--card)]"
                           }`}
                         >
                           {page}
@@ -261,7 +261,7 @@ export default async function AdminMenuDaysPage({
                       {currentPage < totalPages ? (
                         <Link
                           href={getHistoryHref(selectedMonthKey, currentPage + 1)}
-                          className="rounded-xl border border-border bg-white px-3 py-2 text-xs font-semibold transition-colors hover:bg-surface"
+                          className="rounded-xl border border-border bg-[var(--surface-strong)] px-3 py-2 text-xs font-semibold transition-colors hover:bg-[var(--card)]"
                         >
                           Siguiente
                         </Link>
@@ -292,7 +292,7 @@ export default async function AdminMenuDaysPage({
                           return (
                             <div
                               key={option.id}
-                              className="flex items-center justify-between gap-3 rounded-[14px] border border-border bg-white px-3 py-2 text-sm"
+                              className="flex items-center justify-between gap-3 rounded-[14px] border border-border bg-[var(--surface-strong)] px-3 py-2 text-sm"
                             >
                               <span className="min-w-0 flex-1">{option.name}</span>
                               <span className="font-medium text-muted">{selectionCount}</span>

@@ -11,7 +11,7 @@ export const metadata: Metadata = {
   description: "MVP para seleccionar almuerzos diarios por persona.",
   appleWebApp: {
     capable: true,
-    statusBarStyle: "default",
+    statusBarStyle: "black-translucent",
     title: "Registro de almuerzo",
   },
 };
@@ -20,7 +20,7 @@ export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   viewportFit: "cover",
-  themeColor: "#0f766e",
+  themeColor: "#07090d",
 };
 
 export default function RootLayout({
@@ -29,8 +29,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="es" className="h-full antialiased">
-      <body className="min-h-full flex flex-col">
+    <html lang="es" className="h-full overflow-hidden antialiased">
+      <body className="flex h-dvh min-h-dvh flex-col overflow-hidden">
         <PwaProvider />
         {children}
       </body>

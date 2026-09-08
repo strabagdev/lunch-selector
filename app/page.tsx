@@ -7,7 +7,6 @@ import { prisma } from "@/lib/prisma";
 import { HomeFlow } from "./home-flow";
 
 export const dynamic = "force-dynamic";
-const CUTOFF_NOTICE = "Hora de corte 09:00 AM";
 
 type HomePageProps = {
   searchParams: Promise<{
@@ -33,15 +32,6 @@ function formatShortMenuDate(date: Date) {
     timeZone: "UTC",
     day: "numeric",
     month: "short",
-  }).format(date);
-}
-
-function formatWizardDate(date: Date) {
-  return new Intl.DateTimeFormat("es-CL", {
-    timeZone: "UTC",
-    day: "numeric",
-    month: "short",
-    year: "numeric",
   }).format(date);
 }
 
@@ -117,7 +107,6 @@ export default async function Home({ searchParams }: HomePageProps) {
   const todayMonthKey = todayKey.slice(0, 7);
   const todayDate = new Date(`${todayKey}T00:00:00.000Z`);
   const todayLabel = formatMenuDate(todayDate);
-  const todayWizardLabel = formatWizardDate(todayDate);
 
   const [people, availableMenuDays] = await Promise.all([
     prisma.person.findMany({
@@ -264,15 +253,13 @@ export default async function Home({ searchParams }: HomePageProps) {
 
   return (
     <>
-      <main className="mx-auto flex min-h-dvh w-full max-w-[34rem] flex-1 flex-col gap-3 px-3 py-3 sm:gap-5 sm:px-5 sm:py-6">
+      <main className="mx-auto h-dvh min-h-dvh w-full max-w-[44rem] flex-1 overflow-hidden px-3 pb-[calc(0.5rem+env(safe-area-inset-bottom))] pt-[calc(0.5rem+env(safe-area-inset-top))] sm:px-4 sm:pb-3 sm:pt-3">
         <HomeFlow
           people={people}
           shareUrl={shareUrl}
-          todayWizardLabel={todayWizardLabel}
           todayDateKey={todayKey}
           todayNarrative={todayMenuNarrative}
           todayMonthKey={todayMonthKey}
-          cutoffNotice={CUTOFF_NOTICE}
           isTodayClosed={isTodayClosed}
           menuDays={selectableMenuDays.map(mapMenuDayForHome)}
           coverageMenuDays={availableMenuDays
