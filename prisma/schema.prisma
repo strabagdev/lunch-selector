@@ -8,6 +8,12 @@ datasource db {
   provider = "postgresql"
 }
 
+enum SelectionSource {
+  PUBLIC_WEB
+  ADMIN
+  API
+}
+
 model Person {
   id         String           @id @default(cuid())
   name       String
@@ -48,14 +54,18 @@ model MenuOption {
 }
 
 model LunchSelection {
-  id           String     @id @default(cuid())
+  id           String           @id @default(cuid())
   personId     String
   menuDayId    String
   menuOptionId String
-  selectedAt   DateTime   @default(now())
-  person       Person     @relation(fields: [personId], references: [id], onDelete: Cascade)
-  menuDay      MenuDay    @relation(fields: [menuDayId], references: [id], onDelete: Cascade)
-  menuOption   MenuOption @relation(fields: [menuOptionId, menuDayId], references: [id, menuDayId], onDelete: Cascade)
+  selectedAt   DateTime         @default(now())
+  source       SelectionSource?
+  ipAddress    String?          @db.VarChar(45)
+  userAgent    String?          @db.VarChar(512)
+  sessionId    String?          @db.VarChar(36)
+  person       Person           @relation(fields: [personId], references: [id], onDelete: Cascade)
+  menuDay      MenuDay          @relation(fields: [menuDayId], references: [id], onDelete: Cascade)
+  menuOption   MenuOption       @relation(fields: [menuOptionId, menuDayId], references: [id, menuDayId], onDelete: Cascade)
 
   @@unique([personId, menuDayId])
   @@index([menuDayId])

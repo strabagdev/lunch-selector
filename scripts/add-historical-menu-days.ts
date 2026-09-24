@@ -127,6 +127,7 @@ async function main() {
           personId: person.id,
           menuDayId: menuDay.id,
           menuOptionId: option.id,
+          source: "API",
         },
       });
     }

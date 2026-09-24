@@ -1,10 +1,12 @@
 import { revalidatePath } from "next/cache";
+import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import {
   getOrCreateHomeMenuNarrative,
 } from "@/lib/lunch-ai";
 import { submitLunchSelection } from "@/lib/lunch-selection";
 import { prisma } from "@/lib/prisma";
+import { getPublicSelectionTrace } from "@/lib/selection-trace";
 import { HomeFlow } from "./home-flow";
 
 export const dynamic = "force-dynamic";
@@ -191,13 +193,17 @@ export default async function Home({ searchParams }: HomePageProps) {
     const personId = String(formData.get("personId") ?? "");
     const menuDayId = String(formData.get("menuDayId") ?? "");
     const menuOptionId = String(formData.get("menuOptionId") ?? "");
+    const trace = getPublicSelectionTrace(await headers(), formData);
 
-    const result = await submitLunchSelection({
-      personId,
-      menuDayId,
-      menuOptionId,
-      todayKey,
-    });
+    const result = await submitLunchSelection(
+      {
+        personId,
+        menuDayId,
+        menuOptionId,
+        todayKey,
+      },
+      trace,
+    );
 
     if (result.status !== "saved") {
       return;

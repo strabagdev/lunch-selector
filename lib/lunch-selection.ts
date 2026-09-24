@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import type { SelectionTrace } from "@/lib/selection-trace";
 
 type LunchSelectionStore = {
   person: {
@@ -22,8 +23,22 @@ type LunchSelectionStore = {
   lunchSelection: {
     upsert: (args: {
       where: { personId_menuDayId: { personId: string; menuDayId: string } };
-      update: { menuOptionId: string };
-      create: { personId: string; menuDayId: string; menuOptionId: string };
+      update: {
+        menuOptionId: string;
+        source: SelectionTrace["source"];
+        ipAddress: string | null;
+        userAgent: string | null;
+        sessionId: string | null;
+      };
+      create: {
+        personId: string;
+        menuDayId: string;
+        menuOptionId: string;
+        source: SelectionTrace["source"];
+        ipAddress: string | null;
+        userAgent: string | null;
+        sessionId: string | null;
+      };
       select: { id: true };
     }) => Promise<{ id: string }>;
   };
@@ -49,6 +64,7 @@ export async function submitLunchSelection(
     menuOptionId: string;
     todayKey: string;
   },
+  trace: SelectionTrace,
   db: LunchSelectionStore = prisma,
 ): Promise<SubmitLunchSelectionResult> {
   if (!personId || !menuDayId || !menuOptionId) {
@@ -93,11 +109,19 @@ export async function submitLunchSelection(
     },
     update: {
       menuOptionId,
+      source: trace.source,
+      ipAddress: trace.ipAddress,
+      userAgent: trace.userAgent,
+      sessionId: trace.sessionId,
     },
     create: {
       personId,
       menuDayId,
       menuOptionId,
+      source: trace.source,
+      ipAddress: trace.ipAddress,
+      userAgent: trace.userAgent,
+      sessionId: trace.sessionId,
     },
     select: {
       id: true,
