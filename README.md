@@ -68,7 +68,7 @@ Variables requeridas:
 - `REPORT_TIMEZONE`: por defecto `America/Santiago`.
 - `REPORT_SCHEDULED_LOCAL_HOUR`: hora local para el env&iacute;o autom&aacute;tico. Por defecto `9`.
 - `REPORT_SCHEDULED_LOCAL_MINUTE`: minuto local para el env&iacute;o autom&aacute;tico. Por defecto `30`.
-- `REPORT_SCHEDULED_WINDOW_MINUTES`: ventana de tolerancia para Railway Cron. Por defecto `5`.
+- `REPORT_SCHEDULED_WINDOW_MINUTES`: ventana de tolerancia para Railway Cron. Por defecto `15`.
 - `WHATSAPP_REPORT_ENABLED`: usa `1` para enviar tambi&eacute;n por WhatsApp.
 - `WHATSAPP_ACCESS_TOKEN`: token de Meta WhatsApp Cloud API.
 - `WHATSAPP_PHONE_NUMBER_ID`: ID del n&uacute;mero emisor en WhatsApp Cloud API.

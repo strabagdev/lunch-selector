@@ -23,12 +23,14 @@ function withoutScheduledMinuteOverride(callback: () => void) {
 test("scheduled report window", async (t) => {
   const {
     getScheduledReportLocalMinute,
+    getScheduledReportWindowMinutes,
     isWithinScheduledReportWindow,
   } = await import("./daily-report");
 
   await t.test("uses 09:30 as the default scheduled report time", () => {
     withoutScheduledMinuteOverride(() => {
       delete process.env.REPORT_SCHEDULED_LOCAL_HOUR;
+      delete process.env.REPORT_SCHEDULED_WINDOW_MINUTES;
 
       const schedule = isWithinScheduledReportWindow(
         new Date("2026-09-08T12:30:00.000Z"),
@@ -37,9 +39,29 @@ test("scheduled report window", async (t) => {
       assert.equal(schedule.scheduledHour, 9);
       assert.equal(schedule.scheduledMinute, 30);
       assert.equal(getScheduledReportLocalMinute(), 30);
+      assert.equal(getScheduledReportWindowMinutes(), 15);
+      assert.equal(schedule.windowMinutes, 15);
       assert.equal(schedule.isWithinWindow, true);
     });
   });
+  await t.test("accepts 09:30 through 09:44 and rejects 09:45", () => {
+    withoutScheduledMinuteOverride(() => {
+      delete process.env.REPORT_SCHEDULED_LOCAL_HOUR;
+      delete process.env.REPORT_SCHEDULED_WINDOW_MINUTES;
+
+      const schedules = [
+        isWithinScheduledReportWindow(new Date("2026-09-08T12:30:00.000Z")),
+        isWithinScheduledReportWindow(new Date("2026-09-08T12:44:59.000Z")),
+        isWithinScheduledReportWindow(new Date("2026-09-08T12:45:00.000Z")),
+      ];
+
+      assert.deepEqual(
+        schedules.map((schedule) => schedule.isWithinWindow),
+        [true, true, false],
+      );
+    });
+  });
+
 
   await t.test("summer time in Chile sends only on the matching UTC run", () => {
     withoutScheduledMinuteOverride(() => {

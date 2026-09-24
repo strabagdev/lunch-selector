@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 export const REPORT_TIMEZONE = process.env.REPORT_TIMEZONE ?? "America/Santiago";
 
 export type DailyReportSummary = {
+  menuDayId: string;
   dateKey: string;
   dateLabel: string;
   totalSelections: number;
@@ -19,6 +20,11 @@ export type DailyReportSendResult =
       summary: DailyReportSummary;
       recipientCount: number;
       deliveryId: string | null;
+    }
+  | {
+      status: "already_sent" | "in_progress";
+      summary: DailyReportSummary;
+      recipientCount: number;
     }
   | {
       status: "skipped";
@@ -120,10 +126,10 @@ export function getScheduledReportLocalMinute() {
 }
 
 export function getScheduledReportWindowMinutes() {
-  const configuredWindow = Number(process.env.REPORT_SCHEDULED_WINDOW_MINUTES ?? 5);
+  const configuredWindow = Number(process.env.REPORT_SCHEDULED_WINDOW_MINUTES ?? 15);
 
   if (!Number.isInteger(configuredWindow) || configuredWindow < 1 || configuredWindow > 30) {
-    return 5;
+    return 15;
   }
 
   return configuredWindow;
@@ -237,6 +243,7 @@ export async function getDailyReportSummary(): Promise<DailyReportSummary | null
   const menuDay = await prisma.menuDay.findUnique({
     where: { date: todayDate },
     select: {
+      id: true,
       date: true,
       options: {
         where: { isAvailable: true },
@@ -275,6 +282,7 @@ export async function getDailyReportSummary(): Promise<DailyReportSummary | null
   const totalSelections = menuDay.selections.length;
 
   return {
+    menuDayId: menuDay.id,
     dateKey,
     dateLabel: formatReportDate(menuDay.date),
     totalSelections,

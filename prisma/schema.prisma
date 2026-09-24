@@ -14,6 +14,18 @@ enum SelectionSource {
   API
 }
 
+enum DailyReportDeliveryChannel {
+  EMAIL
+  WHATSAPP
+}
+
+enum DailyReportDeliveryStatus {
+  PENDING
+  PROCESSING
+  SENT
+  FAILED
+}
+
 model Person {
   id         String           @id @default(cuid())
   name       String
@@ -26,13 +38,14 @@ model Person {
 }
 
 model MenuDay {
-  id         String           @id @default(cuid())
-  date       DateTime         @db.Date
-  isClosed   Boolean          @default(false)
-  createdAt  DateTime         @default(now())
-  updatedAt  DateTime         @updatedAt
-  options    MenuOption[]
-  selections LunchSelection[]
+  id               String                @id @default(cuid())
+  date             DateTime              @db.Date
+  isClosed         Boolean               @default(false)
+  createdAt        DateTime              @default(now())
+  updatedAt        DateTime              @updatedAt
+  options          MenuOption[]
+  selections       LunchSelection[]
+  reportDeliveries DailyReportDelivery[]
 
   @@unique([date])
 }
@@ -70,6 +83,29 @@ model LunchSelection {
   @@unique([personId, menuDayId])
   @@index([menuDayId])
   @@index([menuOptionId])
+}
+
+model DailyReportDelivery {
+  id                 String                     @id @default(cuid())
+  menuDayId          String
+  channel            DailyReportDeliveryChannel
+  recipientKey       String                     @db.VarChar(191)
+  destination        String                     @db.Text
+  status             DailyReportDeliveryStatus  @default(PENDING)
+  attemptCount       Int                        @default(0)
+  lastAttemptAt      DateTime?
+  sentAt             DateTime?
+  lastError          String?                    @db.Text
+  leaseToken         String?                    @db.VarChar(36)
+  leaseExpiresAt     DateTime?
+  providerDeliveryId String?
+  createdAt          DateTime                   @default(now())
+  updatedAt          DateTime                   @updatedAt
+  menuDay            MenuDay                    @relation(fields: [menuDayId], references: [id], onDelete: Cascade)
+
+  @@unique([menuDayId, channel, recipientKey])
+  @@index([status, leaseExpiresAt])
+  @@index([menuDayId])
 }
 
 model HomeMenuNarrative {

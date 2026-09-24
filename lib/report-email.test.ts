@@ -1,3 +1,45 @@
+test("already closed menu still retries pending report deliveries", async () => {
+  const { runCloseAndSendDailyReportEmail } = await import("./report-email");
+  const calls: string[] = [];
+
+  const result = await runCloseAndSendDailyReportEmail({
+    closeTodayMenuDayRequests: async () => {
+      calls.push("close");
+      return {
+        status: "already_closed",
+        dateKey: "2026-09-08",
+        menuDayId: "menu-day-1",
+      };
+    },
+    sendDailyReportEmail: async () => {
+      calls.push("email");
+      return {
+        status: "sent",
+        summary: {
+          menuDayId: "menu-day-1",
+          dateKey: "2026-09-08",
+          dateLabel: "8 de septiembre de 2026",
+          totalSelections: 1,
+          items: [],
+        },
+        recipientCount: 1,
+        deliveryId: "email-1",
+      };
+    },
+    sendDailyReportWhatsApp: async () => {
+      calls.push("whatsapp");
+      return {
+        status: "skipped",
+        reason: "disabled",
+        dateKey: "2026-09-08",
+      };
+    },
+  });
+
+  assert.equal(result.close.status, "already_closed");
+  assert.equal(result.email.status, "sent");
+  assert.deepEqual(calls, ["close", "email", "whatsapp"]);
+});
 import assert from "node:assert/strict";
 import test from "node:test";
 import type {

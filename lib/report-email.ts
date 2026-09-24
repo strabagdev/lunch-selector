@@ -6,6 +6,7 @@ import {
   type DailyRequestsCloseResult,
   type DailyReportSendResult,
 } from "@/lib/daily-report";
+import { executeReportDelivery } from "@/lib/report-delivery";
 
 export type CloseAndSendDailyReportResult = {
   close: DailyRequestsCloseResult;
@@ -21,7 +22,7 @@ type CloseAndSendDailyReportDependencies = {
 
 type DailyReportWhatsAppSendResult =
   | {
-      status: "sent";
+      status: "sent" | "already_sent" | "in_progress";
       summary: NonNullable<Awaited<ReturnType<typeof getDailyReportSummary>>>;
       recipientCount: number;
       messageIds: string[];
@@ -174,37 +175,60 @@ export async function sendDailyReportEmail(): Promise<DailyReportSendResult> {
     };
   }
 
-  const response = await fetch("https://api.resend.com/emails", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${process.env.RESEND_API_KEY}`,
-      "Content-Type": "application/json",
+  let recipientCount = config.recipients.length;
+  const deliveryResult = await executeReportDelivery(
+    {
+      menuDayId: summary.menuDayId,
+      channel: "EMAIL",
+      recipientKey: "daily-report",
+      destination: JSON.stringify(config.recipients),
     },
-    body: JSON.stringify({
-      from: process.env.REPORT_FROM_EMAIL,
-      to: config.recipients,
-      subject: buildReportSubject(summary.dateLabel),
-      text: buildReportText(summary.dateLabel, summary.totalSelections, summary.items),
-      html: buildReportHtml(
-        summary.dateLabel,
-        summary.totalSelections,
-        summary.items,
-      ),
-    }),
-  });
+    async (delivery) => {
+      const recipients = JSON.parse(delivery.destination) as string[];
+      recipientCount = recipients.length;
+      const response = await fetch("https://api.resend.com/emails", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${process.env.RESEND_API_KEY}`,
+          "Content-Type": "application/json",
+          "Idempotency-Key": `daily-report/${delivery.id}`,
+        },
+        body: JSON.stringify({
+          from: process.env.REPORT_FROM_EMAIL,
+          to: recipients,
+          subject: buildReportSubject(summary.dateLabel),
+          text: buildReportText(summary.dateLabel, summary.totalSelections, summary.items),
+          html: buildReportHtml(
+            summary.dateLabel,
+            summary.totalSelections,
+            summary.items,
+          ),
+        }),
+      });
 
-  if (!response.ok) {
-    const errorText = await response.text();
-    throw new Error(`Resend email request failed: ${response.status} ${errorText}`);
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Resend email request failed: ${response.status} ${errorText}`);
+      }
+
+      const responseData = (await response.json()) as { id?: string };
+      return responseData.id ?? null;
+    },
+  );
+
+  if (deliveryResult.status !== "sent") {
+    return {
+      status: deliveryResult.status,
+      summary,
+      recipientCount,
+    };
   }
-
-  const responseData = (await response.json()) as { id?: string };
 
   return {
     status: "sent",
     summary,
-    recipientCount: config.recipients.length,
-    deliveryId: responseData.id ?? null,
+    recipientCount,
+    deliveryId: deliveryResult.providerDeliveryId,
   };
 }
 
@@ -294,47 +318,70 @@ export async function sendDailyReportWhatsApp(): Promise<DailyReportWhatsAppSend
     summary.items,
   );
 
+  const deliveryStatuses: Array<"sent" | "already_sent" | "in_progress"> = [];
+
   for (const recipient of config.recipients) {
-    const response = await fetch(
-      `https://graph.facebook.com/${graphApiVersion}/${phoneNumberId}/messages`,
+    const deliveryResult = await executeReportDelivery(
       {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${process.env.WHATSAPP_ACCESS_TOKEN}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          messaging_product: "whatsapp",
-          recipient_type: "individual",
-          to: recipient,
-          type: "text",
-          text: {
-            preview_url: false,
-            body,
+        menuDayId: summary.menuDayId,
+        channel: "WHATSAPP",
+        recipientKey: recipient,
+        destination: recipient,
+      },
+      async (delivery) => {
+        const response = await fetch(
+          `https://graph.facebook.com/${graphApiVersion}/${phoneNumberId}/messages`,
+          {
+            method: "POST",
+            headers: {
+              Authorization: `Bearer ${process.env.WHATSAPP_ACCESS_TOKEN}`,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              messaging_product: "whatsapp",
+              recipient_type: "individual",
+              to: delivery.destination,
+              type: "text",
+              text: {
+                preview_url: false,
+                body,
+              },
+            }),
           },
-        }),
+        );
+
+        if (!response.ok) {
+          const errorText = await response.text();
+          throw new Error(
+            `WhatsApp report request failed for ${delivery.destination}: ${response.status} ${errorText}`,
+          );
+        }
+
+        const responseData = (await response.json()) as {
+          messages?: Array<{ id?: string }>;
+        };
+        return responseData.messages?.[0]?.id ?? null;
       },
     );
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(
-        `WhatsApp report request failed for ${recipient}: ${response.status} ${errorText}`,
-      );
+    deliveryStatuses.push(deliveryResult.status);
+
+    if (deliveryResult.providerDeliveryId) {
+      responseMessageIds.push(deliveryResult.providerDeliveryId);
     }
-
-    const responseData = (await response.json()) as {
-      messages?: Array<{ id?: string }>;
-    };
-
-    responseMessageIds.push(responseData.messages?.[0]?.id ?? "");
   }
 
+  const status = deliveryStatuses.some((deliveryStatus) => deliveryStatus === "sent")
+    ? "sent"
+    : deliveryStatuses.some((deliveryStatus) => deliveryStatus === "in_progress")
+      ? "in_progress"
+      : "already_sent";
+
   return {
-    status: "sent",
+    status,
     summary,
     recipientCount: config.recipients.length,
-    messageIds: responseMessageIds.filter(Boolean),
+    messageIds: responseMessageIds,
   };
 }
 
