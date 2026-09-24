@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useRef, useState } from "react";
+import { getCalorieEstimateDisplay } from "@/lib/calorie-display";
 import { QrLauncher } from "./qr-launcher";
 
 type PersonOption = {
@@ -13,6 +14,8 @@ type MenuOptionItem = {
   id: string;
   name: string;
   selectionCount: number;
+  caloriesKcal: number | null;
+  calorieEstimateStatus: "PENDING" | "ESTIMATED" | "FAILED";
 };
 
 type MenuDayItem = {
@@ -65,7 +68,6 @@ const COVERED_DAYS_PREVIEW_LIMIT = 6;
 const SESSION_STORAGE_KEY = "lunch-selector-session-id";
 const SESSION_ID_PATTERN =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-const MOCK_ENERGY_ESTIMATES_KCAL = [620, 740, 710, 485, 660, 590, 735, 515];
 const CALENDAR_WEEKDAYS = ["Lun", "Mar", "Mie", "Jue", "Vie", "Sab", "Dom"];
 const CALENDAR_MONTHS = [
   "enero",
@@ -146,12 +148,6 @@ function buildMonthCalendarDays(monthKey: string, menuDays: MenuDayItem[]) {
   }
 
   return monthDays;
-}
-
-function getMockEnergyEstimateKcal(optionIndex: number) {
-  return MOCK_ENERGY_ESTIMATES_KCAL[
-    optionIndex % MOCK_ENERGY_ESTIMATES_KCAL.length
-  ];
 }
 
 function createAnonymousSessionId() {
@@ -796,35 +792,46 @@ export function HomeFlow({
             {selectedMenuDay ? (
               <div className="mt-4 rounded-[22px] border border-border bg-[var(--surface)] px-2.5 py-2.5 shadow-[var(--shadow-soft)]">
                 <div className="grid gap-2 sm:grid-cols-2">
-                  {selectedMenuDay.options.map((option, index) => (
-                    <label key={option.id} className="block cursor-pointer">
-                      <input
-                        type="radio"
-                        value={option.id}
-                        checked={selectedMenuOptionId === option.id}
-                        onChange={() => setSelectedMenuOptionId(option.id)}
-                        className="peer sr-only"
-                      />
-                      <span className="relative block rounded-[20px] border border-border bg-[var(--surface-strong)] px-3.5 py-3 shadow-[var(--shadow-soft)] transition duration-150 hover:-translate-y-0.5 hover:border-[var(--border-strong)] hover:bg-[rgba(54,60,70,0.98)] hover:shadow-[0_18px_32px_-24px_rgba(0,0,0,0.8)] peer-checked:border-[var(--accent-border)] peer-checked:bg-[var(--accent-soft)] peer-checked:shadow-[0_0_0_1px_var(--accent-border)]">
-                        <span className="absolute right-3 top-3 inline-flex h-6 w-6 items-center justify-center rounded-full border border-border bg-[rgba(7,9,13,0.62)] text-[11px] font-semibold leading-none text-muted">
-                          {index + 1}
-                        </span>
-                        <span className="block min-w-0">
-                          <span className="block pr-8 text-base font-semibold leading-6 sm:text-[1.05rem] sm:leading-6">
-                            {option.name}
+                  {selectedMenuDay.options.map((option, index) => {
+                    const calorieEstimate = getCalorieEstimateDisplay(option);
+                    const hasCalorieEstimate =
+                      option.calorieEstimateStatus === "ESTIMATED" &&
+                      option.caloriesKcal !== null;
+
+                    return (
+                      <label key={option.id} className="block cursor-pointer">
+                        <input
+                          type="radio"
+                          value={option.id}
+                          checked={selectedMenuOptionId === option.id}
+                          onChange={() => setSelectedMenuOptionId(option.id)}
+                          className="peer sr-only"
+                        />
+                        <span className="relative block rounded-[20px] border border-border bg-[var(--surface-strong)] px-3.5 py-3 shadow-[var(--shadow-soft)] transition duration-150 hover:-translate-y-0.5 hover:border-[var(--border-strong)] hover:bg-[rgba(54,60,70,0.98)] hover:shadow-[0_18px_32px_-24px_rgba(0,0,0,0.8)] peer-checked:border-[var(--accent-border)] peer-checked:bg-[var(--accent-soft)] peer-checked:shadow-[0_0_0_1px_var(--accent-border)]">
+                          <span className="absolute right-3 top-3 inline-flex h-6 w-6 items-center justify-center rounded-full border border-border bg-[rgba(7,9,13,0.62)] text-[11px] font-semibold leading-none text-muted">
+                            {index + 1}
                           </span>
-                          <span className="mt-2.5 block rounded-[14px] border border-border bg-[rgba(7,9,13,0.42)] px-3 py-1.5 text-left">
-                            <span className="block text-base font-semibold leading-none text-[var(--accent-strong)]">
-                              &asymp; {getMockEnergyEstimateKcal(index)} kcal
+                          <span className="block min-w-0">
+                            <span className="block pr-8 text-base font-semibold leading-6 sm:text-[1.05rem] sm:leading-6">
+                              {option.name}
+                            </span>
+                            <span className="mt-2.5 block rounded-[14px] border border-border bg-[rgba(7,9,13,0.42)] px-3 py-1.5 text-left">
+                              <span className={`block leading-none ${
+                                hasCalorieEstimate
+                                  ? "text-base font-semibold text-[var(--accent-strong)]"
+                                  : "text-xs font-medium text-muted"
+                              }`}>
+                                {calorieEstimate}
+                              </span>
                             </span>
                           </span>
                         </span>
-                      </span>
-                    </label>
-                  ))}
+                      </label>
+                    );
+                  })}
                 </div>
                 <p className="mt-2.5 px-1 text-xs leading-5 text-muted">
-                  Aporte energ&eacute;tico estimado seg&uacute;n los componentes del plato.
+                  Aporte energ&eacute;tico aproximado para una porci&oacute;n est&aacute;ndar.
                 </p>
               </div>
             ) : null}

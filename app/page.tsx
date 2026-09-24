@@ -64,6 +64,8 @@ function mapMenuDayForHome(menuDay: {
   options: Array<{
     id: string;
     name: string;
+    caloriesKcal: number | null;
+    calorieEstimateStatus: "PENDING" | "ESTIMATED" | "FAILED";
   }>;
   selections: Array<{
     personId: string;
@@ -96,6 +98,8 @@ function mapMenuDayForHome(menuDay: {
     options: menuDay.options.map((option) => ({
       id: option.id,
       name: option.name,
+      caloriesKcal: option.caloriesKcal,
+      calorieEstimateStatus: option.calorieEstimateStatus,
       selectionCount: selectionCountByOption.get(option.id) ?? 0,
     })),
   };
@@ -141,6 +145,8 @@ export default async function Home({ searchParams }: HomePageProps) {
             id: true,
             name: true,
             sortOrder: true,
+            caloriesKcal: true,
+            calorieEstimateStatus: true,
           },
         },
         selections: {

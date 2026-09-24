@@ -1,5 +1,9 @@
 import Link from "next/link";
 import { revalidatePath } from "next/cache";
+import {
+  estimateAndPersistMenuOptionCalories,
+  renameMenuOptionAndEstimateCalories,
+} from "@/lib/menu-option-calories";
 import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
@@ -97,7 +101,7 @@ export default async function AdminMenuConfigPage({
     });
 
     if (!existingMenuDay) {
-      await prisma.menuDay.create({
+      const createdMenuDay = await prisma.menuDay.create({
         data: {
           date,
           options:
@@ -111,8 +115,19 @@ export default async function AdminMenuConfigPage({
                   })),
                 },
         },
-        select: { id: true },
+        select: {
+          id: true,
+          options: {
+            select: { id: true, name: true },
+          },
+        },
       });
+
+      await Promise.all(
+        createdMenuDay.options.map((option) =>
+          estimateAndPersistMenuOptionCalories(option),
+        ),
+      );
     }
 
     revalidatePath("/admin/menu-config");
@@ -183,15 +198,17 @@ export default async function AdminMenuConfigPage({
         select: { id: true },
       });
     } else {
-      await prisma.menuOption.create({
+      const createdOption = await prisma.menuOption.create({
         data: {
           menuDayId,
           name,
           sortOrder: nextSortOrder,
           isAvailable: true,
         },
-        select: { id: true },
+        select: { id: true, name: true },
       });
+
+      await estimateAndPersistMenuOptionCalories(createdOption);
     }
 
     revalidatePath("/admin/menu-config");
@@ -210,26 +227,30 @@ export default async function AdminMenuConfigPage({
       return;
     }
 
-    const duplicatedOption = await prisma.menuOption.findUnique({
-      where: {
-        menuDayId_name: {
-          menuDayId,
-          name,
+    const [currentOption, duplicatedOption] = await Promise.all([
+      prisma.menuOption.findUnique({
+        where: { id: optionId },
+        select: { name: true },
+      }),
+      prisma.menuOption.findUnique({
+        where: {
+          menuDayId_name: {
+            menuDayId,
+            name,
+          },
         },
-      },
-      select: { id: true },
-    });
+        select: { id: true },
+      }),
+    ]);
 
-    if (duplicatedOption && duplicatedOption.id !== optionId) {
+    if (!currentOption || (duplicatedOption && duplicatedOption.id !== optionId)) {
       return;
     }
 
-    await prisma.menuOption.update({
-      where: { id: optionId },
-      data: {
-        name,
-      },
-      select: { id: true },
+    await renameMenuOptionAndEstimateCalories({
+      id: optionId,
+      currentName: currentOption.name,
+      nextName: name,
     });
 
     revalidatePath("/admin/menu-config");

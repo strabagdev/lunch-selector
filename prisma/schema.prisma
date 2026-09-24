@@ -14,6 +14,12 @@ enum SelectionSource {
   API
 }
 
+enum CalorieEstimateStatus {
+  PENDING
+  ESTIMATED
+  FAILED
+}
+
 enum DailyReportDeliveryChannel {
   EMAIL
   WHATSAPP
@@ -51,15 +57,19 @@ model MenuDay {
 }
 
 model MenuOption {
-  id          String           @id @default(cuid())
-  menuDayId   String
-  name        String
-  sortOrder   Int              @default(0)
-  isAvailable Boolean          @default(true)
-  createdAt   DateTime         @default(now())
-  updatedAt   DateTime         @updatedAt
-  menuDay     MenuDay          @relation(fields: [menuDayId], references: [id], onDelete: Cascade)
-  selections  LunchSelection[]
+  id                    String                @id @default(cuid())
+  menuDayId             String
+  name                  String
+  sortOrder             Int                   @default(0)
+  isAvailable           Boolean               @default(true)
+  caloriesKcal          Int?
+  calorieEstimateStatus CalorieEstimateStatus @default(PENDING)
+  calorieEstimatedAt    DateTime?
+  calorieEstimateModel  String?
+  createdAt             DateTime              @default(now())
+  updatedAt             DateTime              @updatedAt
+  menuDay               MenuDay               @relation(fields: [menuDayId], references: [id], onDelete: Cascade)
+  selections            LunchSelection[]
 
   @@unique([id, menuDayId])
   @@unique([menuDayId, name])

@@ -23,6 +23,22 @@ type HomeMenuNarrativeInput = {
   }>;
 };
 
+export type CalorieEstimate = {
+  caloriesKcal: number;
+  model: string;
+};
+
+type CalorieEstimateOptions = {
+  apiKey?: string;
+  model?: string;
+  fetchImpl?: typeof fetch;
+  timeoutMs?: number;
+};
+
+export const MIN_CALORIES_KCAL = 100;
+export const MAX_CALORIES_KCAL = 2500;
+const CALORIE_ESTIMATE_TIMEOUT_MS = 10_000;
+
 function coerceText(value: unknown) {
   const text = String(value ?? "").trim();
   return text.length > 0 ? text : null;
@@ -40,6 +56,133 @@ function getApiKey() {
 
 function getModel(envName: string) {
   return process.env[envName] || DEFAULT_MODEL;
+}
+
+export function parseCalorieEstimateResponse(content: unknown) {
+  if (typeof content !== "string") {
+    throw new Error("OpenAI calorie estimate response is not JSON text");
+  }
+
+  let parsed: unknown;
+
+  try {
+    parsed = JSON.parse(content);
+  } catch {
+    throw new Error("OpenAI calorie estimate response is invalid JSON");
+  }
+
+  if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+    throw new Error("OpenAI calorie estimate response has an invalid shape");
+  }
+
+  const record = parsed as Record<string, unknown>;
+  const caloriesKcal = record.caloriesKcal;
+
+  if (Object.keys(record).length !== 1 || !Number.isInteger(caloriesKcal)) {
+    throw new Error("OpenAI calorie estimate must contain one integer value");
+  }
+
+  if (
+    (caloriesKcal as number) < MIN_CALORIES_KCAL ||
+    (caloriesKcal as number) > MAX_CALORIES_KCAL
+  ) {
+    throw new Error("OpenAI calorie estimate is outside the accepted range");
+  }
+
+  return caloriesKcal as number;
+}
+
+export async function estimateMenuOptionCalories(
+  name: string,
+  options: CalorieEstimateOptions = {},
+): Promise<CalorieEstimate> {
+  const normalizedName = name.replace(/\s+/g, " ").trim();
+
+  if (!normalizedName) {
+    throw new Error("A menu option name is required for calorie estimation");
+  }
+
+  const apiKey = options.apiKey ?? getApiKey();
+  if (!apiKey) {
+    throw new Error("OpenAI calorie estimation is not configured");
+  }
+
+  const model = options.model ?? getModel("OPENAI_CALORIE_ESTIMATE_MODEL");
+  const fetchImpl = options.fetchImpl ?? fetch;
+  const controller = new AbortController();
+  const timeout = setTimeout(
+    () => controller.abort(),
+    options.timeoutMs ?? CALORIE_ESTIMATE_TIMEOUT_MS,
+  );
+
+  try {
+    const response = await fetchImpl(OPENAI_API_URL, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${apiKey}`,
+      },
+      signal: controller.signal,
+      body: JSON.stringify({
+        model,
+        temperature: 0.2,
+        max_tokens: 80,
+        response_format: {
+          type: "json_schema",
+          json_schema: {
+            name: "menu_option_calorie_estimate",
+            strict: true,
+            schema: {
+              type: "object",
+              properties: {
+                caloriesKcal: { type: "integer" },
+              },
+              required: ["caloriesKcal"],
+              additionalProperties: false,
+            },
+          },
+        },
+        messages: [
+          {
+            role: "system",
+            content: [
+              "Estimas de forma orientativa el aporte energetico de platos de almuerzo de casino.",
+              "Considera todos los componentes mencionados en el nombre del plato.",
+              "Si no hay cantidades explicitas, asume una porcion adulta estandar razonable.",
+              "Devuelve un unico valor central razonable en kilocalorias.",
+              "No inventes ingredientes o acompanamientos que no aparezcan en el nombre.",
+              "Responde exclusivamente con el JSON solicitado.",
+            ].join(" "),
+          },
+          {
+            role: "user",
+            content: `Plato: ${normalizedName}`,
+          },
+        ],
+      }),
+    });
+
+    if (!response.ok) {
+      throw new Error(`OpenAI calorie estimate failed (${response.status})`);
+    }
+
+    const json = (await response.json().catch(() => ({}))) as {
+      choices?: Array<{ message?: { content?: unknown } }>;
+    };
+    const caloriesKcal = parseCalorieEstimateResponse(
+      json.choices?.[0]?.message?.content,
+    );
+
+    return { caloriesKcal, model };
+  } catch (error) {
+    if (controller.signal.aborted) {
+      throw new Error("OpenAI calorie estimate timed out");
+    }
+
+    throw error;
+  } finally {
+    clearTimeout(timeout);
+  }
 }
 
 async function requestOpenAiNarrative({
