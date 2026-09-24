@@ -4,7 +4,10 @@ import { redirect } from "next/navigation";
 import {
   getOrCreateHomeMenuNarrative,
 } from "@/lib/lunch-ai";
-import { submitLunchSelection } from "@/lib/lunch-selection";
+import {
+  PUBLIC_MENU_SELECTION_SELECT,
+  submitLunchSelection,
+} from "@/lib/lunch-selection";
 import { prisma } from "@/lib/prisma";
 import { getPublicSelectionTrace } from "@/lib/selection-trace";
 import { HomeFlow } from "./home-flow";
@@ -141,15 +144,7 @@ export default async function Home({ searchParams }: HomePageProps) {
           },
         },
         selections: {
-          select: {
-            personId: true,
-            menuOptionId: true,
-            menuOption: {
-              select: {
-                name: true,
-              },
-            },
-          },
+          select: PUBLIC_MENU_SELECTION_SELECT,
         },
       },
     }),

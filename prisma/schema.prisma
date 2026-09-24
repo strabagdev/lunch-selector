@@ -72,6 +72,7 @@ model LunchSelection {
   menuDayId    String
   menuOptionId String
   selectedAt   DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
   source       SelectionSource?
   ipAddress    String?          @db.VarChar(45)
   userAgent    String?          @db.VarChar(512)
@@ -83,6 +84,7 @@ model LunchSelection {
   @@unique([personId, menuDayId])
   @@index([menuDayId])
   @@index([menuOptionId])
+  @@index([sessionId])
 }
 
 model DailyReportDelivery {

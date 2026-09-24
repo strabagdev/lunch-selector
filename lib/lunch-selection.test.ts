@@ -73,7 +73,12 @@ function createSelectionStore({
           writes.push(args);
           assert.equal(args.update.menuOptionId, "option-1");
           assert.equal(args.create.personId, "person-1");
-          return { id: "selection-1" };
+          const selectedAt = new Date("2026-09-08T12:30:00.000Z");
+          return {
+            id: "selection-1",
+            selectedAt,
+            updatedAt: existingSelection ? new Date("2026-09-08T12:45:00.000Z") : selectedAt,
+          };
         },
       },
     },
@@ -182,4 +187,64 @@ test("missing trace values do not prevent saving a selection", async () => {
   assert.equal(writes[0].create.ipAddress, null);
   assert.equal(writes[0].create.userAgent, null);
   assert.equal(writes[0].create.sessionId, null);
+});
+
+test("new selection receives matching selectedAt and updatedAt timestamps", async () => {
+  const { submitLunchSelection } = await import("./lunch-selection");
+  const { store } = createSelectionStore();
+
+  const result = await submitLunchSelection(
+    {
+      personId: "person-1",
+      menuDayId: "menu-day-1",
+      menuOptionId: "option-1",
+      todayKey: "2026-09-08",
+    },
+    PUBLIC_TRACE,
+    store,
+  );
+
+  assert.equal(result.status, "saved");
+
+  if (result.status === "saved") {
+    assert.equal(result.selectedAt.toISOString(), "2026-09-08T12:30:00.000Z");
+    assert.equal(result.updatedAt.toISOString(), result.selectedAt.toISOString());
+  }
+});
+
+test("selection modification changes updatedAt without changing selectedAt", async () => {
+  const { submitLunchSelection } = await import("./lunch-selection");
+  const { store } = createSelectionStore({ existingSelection: true });
+
+  const result = await submitLunchSelection(
+    {
+      personId: "person-1",
+      menuDayId: "menu-day-1",
+      menuOptionId: "option-1",
+      todayKey: "2026-09-08",
+    },
+    PUBLIC_TRACE,
+    store,
+  );
+
+  assert.equal(result.status, "saved");
+
+  if (result.status === "saved") {
+    assert.equal(result.selectedAt.toISOString(), "2026-09-08T12:30:00.000Z");
+    assert.equal(result.updatedAt.toISOString(), "2026-09-08T12:45:00.000Z");
+  }
+});
+
+test("public menu query excludes technical trace fields", async () => {
+  const { PUBLIC_MENU_SELECTION_SELECT } = await import("./lunch-selection");
+
+  assert.deepEqual(Object.keys(PUBLIC_MENU_SELECTION_SELECT).sort(), [
+    "menuOption",
+    "menuOptionId",
+    "personId",
+  ]);
+  assert.equal("source" in PUBLIC_MENU_SELECTION_SELECT, false);
+  assert.equal("ipAddress" in PUBLIC_MENU_SELECTION_SELECT, false);
+  assert.equal("userAgent" in PUBLIC_MENU_SELECTION_SELECT, false);
+  assert.equal("sessionId" in PUBLIC_MENU_SELECTION_SELECT, false);
 });

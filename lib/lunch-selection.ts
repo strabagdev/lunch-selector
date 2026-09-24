@@ -1,6 +1,16 @@
 import { prisma } from "@/lib/prisma";
 import type { SelectionTrace } from "@/lib/selection-trace";
 
+export const PUBLIC_MENU_SELECTION_SELECT = {
+  personId: true,
+  menuOptionId: true,
+  menuOption: {
+    select: {
+      name: true,
+    },
+  },
+} as const;
+
 type LunchSelectionStore = {
   person: {
     findUnique: (args: {
@@ -39,13 +49,13 @@ type LunchSelectionStore = {
         userAgent: string | null;
         sessionId: string | null;
       };
-      select: { id: true };
-    }) => Promise<{ id: string }>;
+      select: { id: true; selectedAt: true; updatedAt: true };
+    }) => Promise<{ id: string; selectedAt: Date; updatedAt: Date }>;
   };
 };
 
 export type SubmitLunchSelectionResult =
-  | { status: "saved" }
+  | { status: "saved"; selectedAt: Date; updatedAt: Date }
   | { status: "rejected" };
 
 function getDateKey(date: Date) {
@@ -100,7 +110,7 @@ export async function submitLunchSelection(
     return { status: "rejected" };
   }
 
-  await db.lunchSelection.upsert({
+  const selection = await db.lunchSelection.upsert({
     where: {
       personId_menuDayId: {
         personId,
@@ -125,8 +135,14 @@ export async function submitLunchSelection(
     },
     select: {
       id: true,
+      selectedAt: true,
+      updatedAt: true,
     },
   });
 
-  return { status: "saved" };
+  return {
+    status: "saved",
+    selectedAt: selection.selectedAt,
+    updatedAt: selection.updatedAt,
+  };
 }
